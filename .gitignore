@@ -1,0 +1,27 @@
+# deps / builds
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# env (keep examples)
+.env
+.env.*
+!.env.example
+!.env.*.example
+!apps/api/.env.test
+
+# local / OS
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# recordings stay out of git
+*.mp4
+*.mov
+*.webm
