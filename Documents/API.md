@@ -18,7 +18,7 @@ REST + JSON API for Ajaia Docs (NestJS 11). This file is the human-readable cont
 
 **Authentication.** Every route requires the session cookie except `POST /auth/login`, `POST /auth/logout`, `GET /health` and `/docs*`. A missing, expired or invalid cookie → `401 UNAUTHENTICATED`.
 
-**CSRF.** POST, PATCH and DELETE must send an `Origin` (or `Referer`) that matches `APP_ORIGIN`, or they get `403 BAD_ORIGIN`. Browsers send it automatically. With `curl`, add `-H "Origin: http://51.170.90.86:<WEB_PORT>"`.
+**CSRF.** The session cookie is `SameSite=Lax`, and POST, PATCH and DELETE with an `Origin` header not in `ALLOWED_ORIGINS` get `403 BAD_ORIGIN`. Browsers send `Origin` automatically; requests without one (curl, server-to-server) are allowed.
 
 **Rate limits.** 120 requests/min per IP across the API; `POST /auth/login` is limited to 5/min per IP. Over the limit → `429 RATE_LIMITED`.
 
@@ -41,7 +41,7 @@ Every non-2xx response uses one envelope. `message` is user-ready copy; some cod
 | `UNAUTHENTICATED` | 401 | No, expired or invalid session cookie | — |
 | `INVALID_CREDENTIALS` | 401 | Wrong email or password (same message for both) | — |
 | `FORBIDDEN` | 403 | Caller has access but the role does not allow the action (editor deletes or shares, viewer edits) | — |
-| `BAD_ORIGIN` | 403 | State-changing request from a foreign or missing origin | — |
+| `BAD_ORIGIN` | 403 | State-changing request whose `Origin` header is present and not allow-listed (no `Origin`, e.g. curl, is allowed; SameSite=Lax is the primary CSRF defence) | — |
 | `NOT_FOUND` | 404 | Doc missing, id malformed, **or caller has no access** | — |
 | `USER_NOT_FOUND` | 404 | Share target email is not a user | — |
 | `ALREADY_SHARED` | 409 | Doc is already shared with that user | — |
