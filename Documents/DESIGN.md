@@ -301,6 +301,9 @@ Nested radii shrink inward. Never put an `md` element flush inside an `sm` conta
 | `divider` | 1px `line` | Between rows and dashboard sections |
 | `badge-owner` | `primary-soft` / `primary`, text "Owner" | Static |
 | `badge-shared` | `accent-soft` / `accent-text`, text "Shared by {name}" | Static |
+| `alert-modal` | Radix AlertDialog, `dialog` sizing, lucide icon (CheckCircle2 `primary` / XCircle `danger`), title, one-line message, 1–2 buttons | Success, error (with Retry), confirm (danger tone for Delete); focus trapped; Esc closes. Replaces every native `alert`/`confirm` |
+| `tooltip` | Radix Tooltip, `on-surface` fill, `surface` text, `label-md`, `sm` radius | Every icon button: label + shortcut ("Bold  Ctrl+B") |
+| `help-hint` | lucide `HelpCircle` 14px, `muted`, opens a tooltip | Next to Import, Share roles and the save chip |
 | `theme-toggle` | 32px icon button, Monitor / Sun / Moon, name "Theme: {current}" | Cycles System → Light → Dark; icon swap animated |
 | `toolbar-button-active` | 32px square, `primary-soft` / `primary`, `sm` radius | Inactive → transparent with `on-surface` icon; `aria-pressed` mirrors active state |
 | `page` | `surface`, 1px `line`, `lg` radius, 816px, 64px 72px padding, `doc-*` type | Read-only (viewer) → toolbar hidden, caret hidden |
@@ -336,7 +339,9 @@ Icons come from `lucide-react`: 16px in buttons, 18px in the toolbar, stroke 1.7
 - **Do** use rust (`accent`) only for "shared" marks.
 - **Do** keep keyboard parity: every toolbar action has a shortcut and a visible focus ring.
 - **Don't** use gradients, emoji, glassmorphism or drop shadows on the page.
-- **Don't** put form errors in toasts. Field errors go inline under the input; toasts are for one-off results ("Shared with Bob").
+- **Don't** use native `alert`/`confirm`. Results and confirmations use `alert-modal`; field errors stay inline under the input, validated live with zod.
+- **Don't** look generated: no purple/indigo, glows, sparkles, oversized rounded cards, marketing heroes or filler copy ("Welcome back!"). The reference is a restrained productivity tool — table-like lists, hairline borders, precise alignment.
+- **Do** give every icon button a tooltip and an `aria-label`; put a `help-hint` wherever a rule isn't obvious (file limits, roles, autosave).
 - **Don't** use `danger` red for anything that is not destructive or a failure.
 - **Don't** add fonts, colours or sizes outside these tokens. If one is missing, add it here first.
 - **Don't** show Share, Delete or the toolbar to users whose `access` does not allow them. Hiding them is UX only; the API still enforces access.
