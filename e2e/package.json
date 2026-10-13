@@ -1,0 +1,21 @@
+{
+  "name": "ajaia-docs-e2e",
+  "private": true,
+  "description": "Playwright end-to-end tests for Ajaia Docs",
+  "scripts": {
+    "fixtures": "node scripts/make-docx.mjs",
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install chromium firefox",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^22.0.0",
+    "docx": "^9.10.0",
+    "typescript": "^5.9.3"
+  }
+}

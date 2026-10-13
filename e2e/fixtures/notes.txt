@@ -1,0 +1,3 @@
+First plain line of the text file.
+
+Second paragraph of the text file.
