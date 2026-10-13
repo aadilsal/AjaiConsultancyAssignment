@@ -1,0 +1,25 @@
+# Local development / test database for the API.
+# Usage: docker compose -f docker-compose.dev.yml up -d
+# Host port 5434 (5433 was already taken on the original dev machine).
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: ajaia-docs-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ajaia
+      POSTGRES_PASSWORD: ajaia
+      POSTGRES_DB: ajaia
+    ports:
+      - "5434:5432"
+    volumes:
+      - ajaia_dev_pgdata:/var/lib/postgresql/data
+      - ./apps/api/prisma/init-test-db.sql:/docker-entrypoint-initdb.d/10-init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ajaia -d ajaia"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ajaia_dev_pgdata:
