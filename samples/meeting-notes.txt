@@ -1,0 +1,16 @@
+Weekly sync — October 13
+
+Attendees: Alice, Bob, Carol.
+
+Alice demoed the new editor. Autosave kicks in about a second after you stop typing, and the status chip shows Saving, then Saved.
+
+Bob tested sharing. He could open and edit Alice's document from "Shared with me", but there was no Share or Delete button for him, which is correct.
+
+Carol tried opening a document link that was never shared with her and got a Not found page.
+
+Action items:
+- Alice to write the release notes.
+- Bob to test importing older Word documents.
+- Carol to review the security notes.
+
+Plain text has no formatting, so each blank-line-separated block above should become its own paragraph.
