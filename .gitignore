@@ -25,3 +25,8 @@ Thumbs.db
 *.mp4
 *.mov
 *.webm
+
+# test output
+playwright-report/
+test-results/
+blob-report/
