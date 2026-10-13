@@ -9,6 +9,8 @@ export function loadTestEnv(): void {
     const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
     if (m) process.env[m[1]] = m[2];
   }
+  // CI points tests at its own Postgres service; never fall back to a shell DATABASE_URL.
+  if (process.env.TEST_DATABASE_URL) process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 }
 
 loadTestEnv();
