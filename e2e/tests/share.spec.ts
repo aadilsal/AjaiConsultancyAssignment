@@ -67,12 +67,14 @@ test.describe('share', () => {
     await shareViaDialog(page, USERS.bob.email);
     await expect(error).toHaveText(/^Already shared with Bob/);
 
-    // Typing again clears the error.
-    await dialog.getByRole('textbox', { name: 'Email' }).fill('carol@');
+    // Typing a valid address clears the error.
+    await dialog.getByRole('textbox', { name: 'Email' }).fill(USERS.carol.email);
     await expect(error).toHaveCount(0);
 
+    // Malformed email: live client-side error, Share stays disabled.
     await shareViaDialog(page, 'not-an-email');
-    await expect(error).toBeVisible();
+    await expect(error).toHaveText('Enter a valid email address');
+    await expect(dialog.getByRole('button', { name: 'Share', exact: true })).toBeDisabled();
   });
 
   test('Share button is visible to the owner only', async ({ page, browser }) => {

@@ -5,16 +5,19 @@ import { expect, type Browser, type BrowserContext, type Locator, type Page } fr
 export type UserKey = 'alice' | 'bob' | 'carol';
 
 export const PASSWORD = 'demo1234';
-export const USERS: Record<UserKey, { name: string; email: string }> = {
-  alice: { name: 'Alice', email: 'alice@ajaia.test' },
-  bob: { name: 'Bob', email: 'bob@ajaia.test' },
-  carol: { name: 'Carol', email: 'carol@ajaia.test' },
+// `name` is the seeded full name; `first` is what the quick-login buttons use.
+export const USERS: Record<UserKey, { name: string; first: string; email: string }> = {
+  alice: { name: 'Alice Johnson', first: 'Alice', email: 'alice@ajaia.test' },
+  bob: { name: 'Bob Smith', first: 'Bob', email: 'bob@ajaia.test' },
+  carol: { name: 'Carol Diaz', first: 'Carol', email: 'carol@ajaia.test' },
 };
 
 export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 export const ORIGIN = new URL(BASE_URL).origin;
 export const NOT_FOUND_TEXT = "This document doesn't exist or you don't have access.";
 export const RANDOM_UUID = '00000000-0000-4000-8000-000000000000';
+// `next dev` may compile the editor route on first hit.
+export const EDITOR_LOAD_MS = 60_000;
 export const fixture = (name: string) => join(__dirname, 'fixtures', name);
 
 let counter = 0;
@@ -88,7 +91,7 @@ export async function signIn(page: Page, user: UserKey) {
     await apiLogin(page, user);
     await writeCache(user, context);
   }
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expectDashboard(page, user);
 }
 
@@ -102,11 +105,11 @@ export async function pageFor(browser: Browser, user: UserKey): Promise<{ contex
 
 /** UI quick-login: clicks "Log in as X" on /login (waits out the rate limiter if hit). */
 export async function loginAs(page: Page, user: UserKey) {
-  const { name } = USERS[user];
+  const { first } = USERS[user];
   for (let attempt = 0; attempt < 3; attempt++) {
     await page.context().clearCookies();
-    await page.goto('/login');
-    await page.getByRole('button', { name: `Log in as ${name}` }).click();
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: `Log in as ${first}` }).click();
     const limited = page.getByRole('alert').filter({ hasText: /too many requests/i });
     const outcome = await Promise.race([
       page.waitForURL((u) => u.pathname === '/', { timeout: 15_000 }).then(() => 'ok' as const),
@@ -136,8 +139,8 @@ export async function logout(page: Page) {
 
 export async function expectDashboard(page: Page, user?: UserKey) {
   await expect(page.getByRole('heading', { name: /^My documents/ })).toBeVisible();
-  await expect(page.getByRole('list', { name: /^Loading/ })).toHaveCount(0);
-  if (user) await expect(page.getByRole('banner').getByText(USERS[user].name, { exact: true })).toBeVisible();
+  await expect(page.getByLabel(/^Loading (My documents|Shared with me)/)).toHaveCount(0);
+  if (user) await expect(page.getByRole('banner').getByText(USERS[user].name, { exact: true }).filter({ visible: true }).first()).toBeVisible();
 }
 
 // ---------- dashboard ----------
@@ -154,10 +157,10 @@ export function docRow(page: Page, sectionName: 'My documents' | 'Shared with me
 
 /** Clicks "New document", renames to `title`, returns the doc id. */
 export async function createDoc(page: Page, title?: string): Promise<string> {
-  if (!/\/$/.test(new URL(page.url()).pathname)) await page.goto('/');
+  if (!/\/$/.test(new URL(page.url()).pathname)) await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'New document' }).click();
   await page.waitForURL(/\/docs\/[0-9a-f-]{36}/);
-  await expect(editorBody(page)).toBeVisible();
+  await expect(editorBody(page)).toBeVisible({ timeout: EDITOR_LOAD_MS });
   if (title) await renameDoc(page, title);
   return docIdFromUrl(page);
 }
@@ -193,8 +196,8 @@ export const tool = (page: Page, name: string) => toolbar(page).getByRole('butto
 export const saveStatus = (page: Page) => page.getByTestId('save-status');
 
 export async function openDoc(page: Page, id: string) {
-  await page.goto(`/docs/${id}`);
-  await expect(editorBody(page)).toBeVisible();
+  await page.goto(`/docs/${id}`, { waitUntil: 'domcontentloaded' });
+  await expect(editorBody(page)).toBeVisible({ timeout: EDITOR_LOAD_MS });
 }
 
 export async function renameDoc(page: Page, title: string) {
@@ -247,7 +250,13 @@ export async function shareViaDialog(page: Page, email: string, role: 'Editor' |
   const dialog = shareDialog(page);
   await dialog.getByRole('textbox', { name: 'Email' }).fill(email);
   await dialog.getByRole('combobox', { name: 'Role' }).selectOption({ label: role });
-  await dialog.getByRole('button', { name: 'Share', exact: true }).click();
+  // Client-side zod validation keeps Share disabled for invalid input (error shows on blur).
+  const submit = dialog.getByRole('button', { name: 'Share', exact: true });
+  const enabled = await expect(submit)
+    .toBeEnabled({ timeout: 2_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (enabled) await submit.click();
 }
 
 /** Shares and dismisses the "Shared with {name}" success modal. */
@@ -280,7 +289,7 @@ export async function importAndOpen(page: Page, file: string, expectedTitle: str
     await expect(success).toBeHidden();
   }
   await page.waitForURL(/\/docs\/[0-9a-f-]{36}/);
-  await expect(editorBody(page)).toBeVisible();
+  await expect(editorBody(page)).toBeVisible({ timeout: EDITOR_LOAD_MS });
   return docIdFromUrl(page);
 }
 
@@ -288,11 +297,14 @@ export async function importAndOpen(page: Page, file: string, expectedTitle: str
 
 export const alertDialog = (page: Page, name: string | RegExp) => page.getByRole('alertdialog', { name });
 
-/** Asserts a success/info modal appears and dismisses it with its button (default "OK"). */
+/** Asserts a success/info modal appears and dismisses it (success modals may also auto-close after 2.5s). */
 export async function dismissModal(page: Page, name: string | RegExp, button = 'OK') {
   const modal = alertDialog(page, name);
   await expect(modal).toBeVisible();
-  await modal.getByRole('button', { name: button, exact: true }).click();
+  await modal
+    .getByRole('button', { name: button, exact: true })
+    .click({ timeout: 2_000 })
+    .catch(() => undefined);
   await expect(modal).toBeHidden();
 }
 

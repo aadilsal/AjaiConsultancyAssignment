@@ -79,7 +79,9 @@ test.describe('deny', () => {
 
     const missing = await r.get(`/api/documents/${RANDOM_UUID}`);
     expect(missing.status()).toBe(404);
-    expect(await missing.json()).toEqual(await calls['GET doc'].json());
+    // Same code + message as a forbidden doc (requestId differs per request).
+    const strip = ({ error: { code, message } }: { error: { code: string; message: string } }) => ({ code, message });
+    expect(strip(await missing.json())).toEqual(strip(await calls['GET doc'].json()));
     expect((await r.get('/api/documents/not-a-uuid')).status()).toBe(404);
   });
 

@@ -197,7 +197,7 @@ test.describe('autosave', () => {
 
     const modal = page.getByRole('alertdialog', { name: 'Leave without saving?' });
     await expect(modal).toBeVisible();
-    await page.keyboard.press('Escape');
+    await modal.getByRole('button', { name: 'Stay' }).click();
     await expect(modal).toBeHidden();
     await expect(page).toHaveURL(new RegExp(`/docs/${docId}`));
     await expect(editorBody(page)).toHaveText('Not yet saved');
@@ -206,6 +206,16 @@ test.describe('autosave', () => {
     await expectSaved(page);
     await page.getByRole('link', { name: 'Back to documents' }).click();
     await expect(modal).toBeHidden();
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  test('"Leave" in the leave-without-saving modal goes back to the dashboard', async ({ page }) => {
+    await holdSaves(page);
+    await focusEnd(page);
+    await page.keyboard.type('Abandon');
+    await page.getByRole('link', { name: 'Back to documents' }).click();
+    const modal = page.getByRole('alertdialog', { name: 'Leave without saving?' });
+    await modal.getByRole('button', { name: 'Leave' }).click();
     await expect(page).toHaveURL(/\/$/);
   });
 

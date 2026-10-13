@@ -163,7 +163,7 @@ function DocSection({ title, docs, empty, onDelete }: SectionProps) {
         <div className="overflow-hidden rounded-md border border-line bg-surface">
           <div aria-hidden className={`${COLS} border-b border-line px-4 py-2 text-xs font-medium text-muted`}>
             <span>Title</span>
-            <span className="hidden sm:block">Owner</span>
+            <span className="hidden sm:block">Owned by</span>
             <span className="hidden sm:block">Last edited</span>
             <span />
           </div>
@@ -177,7 +177,7 @@ function DocSection({ title, docs, empty, onDelete }: SectionProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.18, ease: EASE, delay: reduce ? 0 : Math.min(i, 8) * 0.03 }}
-                  className="relative border-b border-line transition-colors duration-150 last:border-b-0 hover:bg-canvas"
+                  className="group relative border-b border-line transition-colors duration-150 last:border-b-0 hover:bg-canvas"
                 >
                   <div className={`${COLS} gap-3 px-4 py-2.5`}>
                     <div className="flex min-w-0 items-center gap-2.5">
@@ -204,7 +204,7 @@ function DocSection({ title, docs, empty, onDelete }: SectionProps) {
                     >
                       Edited {relativeTime(doc.updatedAt)}
                     </time>
-                    <div className="relative z-10 flex justify-end">
+                    <div className="relative z-10 flex justify-end row-actions">
                       {onDelete && doc.access === "owner" && (
                         <Tip label="Delete document">
                           <Button variant="quiet" size="icon" aria-label={`Delete ${doc.title}`} onClick={() => void onDelete(doc)}>

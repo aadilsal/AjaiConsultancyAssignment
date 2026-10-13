@@ -16,6 +16,7 @@ import { Badge, HelpTip, Tip } from "../ui";
 import { SaveStatusChip } from "./save-status";
 import { ShareDialog } from "./share-dialog";
 import { ShortcutsDialog } from "./shortcuts-dialog";
+import { StatusBar } from "./status-bar";
 import { TitleInput } from "./title-input";
 import { Toolbar } from "./toolbar";
 
@@ -135,6 +136,7 @@ function EditorView({ doc }: { doc: DocDetail }) {
   const autosave = useAutosave({
     docId: doc.id,
     initialVersion: doc.version,
+    initialSavedAt: doc.updatedAt,
     editor,
     enabled: canEdit,
     onConflict,
@@ -196,7 +198,7 @@ function EditorView({ doc }: { doc: DocDetail }) {
           <div className="min-w-0 flex-1">
             <TitleInput docId={doc.id} initialTitle={doc.title} readOnly={!canEdit} />
           </div>
-          <div className="hidden shrink-0 items-center gap-1.5 md:flex">
+          <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
             {doc.access === "owner" ? (
               <Badge tone="owner">Owner</Badge>
             ) : (
@@ -220,19 +222,12 @@ function EditorView({ doc }: { doc: DocDetail }) {
         </header>
         {canEdit && editor && (
           <div className="mx-auto w-full max-w-[1040px] px-4 pb-2">
-            <div className="mx-auto w-full max-w-[816px] rounded-md border border-line bg-surface px-1.5 py-1">
+            <div className="w-full rounded-md border border-line bg-surface px-1.5 py-1">
               <Toolbar editor={editor} />
             </div>
           </div>
         )}
       </div>
-
-      {!canEdit && (
-        <p className="mx-auto mt-4 flex w-full max-w-[816px] items-center gap-2 px-4 text-sm text-muted sm:px-0 md:hidden">
-          <Badge tone="shared">Shared by {doc.owner.name}</Badge>
-          <Badge tone="neutral">View only</Badge>
-        </p>
-      )}
 
       <motion.main
         initial={{ opacity: 0, y: reduce ? 0 : 6 }}
@@ -240,9 +235,12 @@ function EditorView({ doc }: { doc: DocDetail }) {
         transition={{ duration: 0.22, ease: EASE }}
         className="px-0 pb-24 pt-6 sm:px-4 sm:pt-8"
       >
-        <article className="mx-auto min-h-[70vh] w-full max-w-[816px] border-line bg-surface px-4 py-8 shadow-page sm:rounded-lg sm:border sm:px-[72px] sm:py-16">
+        <article className="print-page mx-auto min-h-[70vh] w-full max-w-[816px] border-line bg-surface px-4 py-8 shadow-page sm:rounded-lg sm:border sm:px-[72px] sm:py-16">
           {editor ? <EditorContent editor={editor} /> : <PageSkeleton />}
         </article>
+        {editor && (
+          <StatusBar editor={editor} lastSavedAt={autosave.lastSavedAt} access={doc.access} ownerName={doc.owner.name} />
+        )}
       </motion.main>
     </div>
   );

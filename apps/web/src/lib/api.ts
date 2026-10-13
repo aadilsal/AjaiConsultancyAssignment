@@ -82,6 +82,12 @@ export const api = {
       body: { email, password },
       skipAuthRedirect: true,
     }),
+  register: (name: string, email: string, password: string) =>
+    request<{ user: User }>("/auth/register", {
+      method: "POST",
+      body: { name, email, password },
+      skipAuthRedirect: true,
+    }),
   logout: () => request<void>("/auth/logout", { method: "POST", skipAuthRedirect: true }),
   me: () => request<{ user: User }>("/auth/me"),
 

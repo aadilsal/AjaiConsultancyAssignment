@@ -12,6 +12,7 @@ const RETRY_DELAYS_MS = [1000, 3000, 10000];
 interface Options {
   docId: string;
   initialVersion: number;
+  initialSavedAt: string;
   editor: Editor | null;
   enabled: boolean;
   /** Called when the user must act: conflict, too large, or retries exhausted. */
@@ -24,8 +25,9 @@ interface Options {
  * Debounced content autosave with optimistic concurrency (baseVersion).
  * One request in flight at a time; local content is never discarded on failure.
  */
-export function useAutosave({ docId, initialVersion, editor, enabled, onConflict, onFailed, onTooLarge }: Options) {
+export function useAutosave({ docId, initialVersion, initialSavedAt, editor, enabled, onConflict, onFailed, onTooLarge }: Options) {
   const [status, setStatusState] = useState<SaveStatus>("saved");
+  const [lastSavedAt, setLastSavedAt] = useState<string>(initialSavedAt);
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const statusRef = useRef<SaveStatus>("saved");
@@ -83,6 +85,7 @@ export function useAutosave({ docId, initialVersion, editor, enabled, onConflict
     try {
       const res = await api.updateContent(docId, ed.getJSON(), versionRef.current);
       versionRef.current = res.version;
+      setLastSavedAt(res.updatedAt);
       retryCountRef.current = 0;
       setStatus(dirtyRef.current ? "unsaved" : "saved");
     } catch (err) {
@@ -162,6 +165,7 @@ export function useAutosave({ docId, initialVersion, editor, enabled, onConflict
     clearTimers();
     ed.commands.setContent(doc.content, { emitUpdate: false });
     versionRef.current = doc.version;
+    setLastSavedAt(doc.updatedAt);
     dirtyRef.current = false;
     setErrorText(null);
     setStatus("saved");
@@ -204,5 +208,5 @@ export function useAutosave({ docId, initialVersion, editor, enabled, onConflict
     };
   }, [clearTimers]);
 
-  return { status, errorText, markDirty, flush, retry, reloadLatest, overwrite };
+  return { status, lastSavedAt, errorText, markDirty, flush, retry, reloadLatest, overwrite };
 }

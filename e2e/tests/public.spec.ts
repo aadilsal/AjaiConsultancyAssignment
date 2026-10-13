@@ -1,8 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { USERS } from '../helpers';
+import { signIn, USERS } from '../helpers';
 
 // Public pages: /welcome landing, /terms, /privacy and the custom 404 (no session needed).
 const PUBLIC_PAGES = ['/welcome', '/terms', '/privacy'] as const;
+// Radix Accordion triggers carry both aria-expanded and aria-controls.
+const faqTriggers = (page: Page) => page.getByRole('main').locator('button[aria-expanded][aria-controls]');
 
 async function metaDescription(page: Page) {
   return page.locator('meta[name="description"]').getAttribute('content');
@@ -58,19 +60,33 @@ test.describe('public pages', () => {
     await expect(page.getByRole('button', { name: 'Log in as Alice' })).toBeVisible();
   });
 
+  test('landing "Log in as Alice" signs in directly and lands on the dashboard', async ({ page }) => {
+    await page.goto('/welcome');
+    await page.getByRole('button', { name: 'Log in as Alice' }).first().click();
+    await page.waitForURL((u) => u.pathname === '/');
+    await expect(page.getByRole('heading', { name: /^My documents/ })).toBeVisible();
+  });
+
+  test('landing nav shows "Open app" when signed in', async ({ page }) => {
+    await signIn(page, 'alice');
+    await page.goto('/welcome');
+    const openApp = page.getByRole('link', { name: 'Open app' }).first();
+    await expect(openApp).toBeVisible();
+    await openApp.click();
+    await expect(page).toHaveURL(/\/$/);
+  });
+
   test('landing shows the three demo accounts', async ({ page }) => {
     await page.goto('/welcome');
     for (const u of Object.values(USERS)) {
-      await expect(page.getByText(u.email).first()).toBeVisible();
+      await expect(page.getByText(u.email).filter({ visible: true }).first()).toBeVisible();
     }
   });
 
   test('FAQ items expand and collapse (aria-expanded)', async ({ page }) => {
     await page.goto('/welcome');
-    const item = page.getByRole('main').getByRole('button', { expanded: false }).first();
-    await item.scrollIntoViewIfNeeded();
-    const name = (await item.innerText()).trim();
-    const trigger = page.getByRole('button', { name, exact: true });
+    const trigger = faqTriggers(page).first();
+    await trigger.scrollIntoViewIfNeeded();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     await trigger.click();
@@ -85,13 +101,21 @@ test.describe('public pages', () => {
 
   test('FAQ is keyboard operable', async ({ page }) => {
     await page.goto('/welcome');
-    const trigger = page.getByRole('main').getByRole('button', { expanded: false }).first();
+    const trigger = faqTriggers(page).nth(1);
     await trigger.focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('main').getByRole('button', { expanded: true }).first()).toBeVisible();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Space');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('unknown route shows the custom 404 with its two actions', async ({ page }) => {
+  test('unknown route without a session redirects to /login', async ({ page }) => {
+    await page.goto('/this-route-does-not-exist');
+    await expect(page).toHaveURL(/\/login\?next=%2Fthis-route-does-not-exist/);
+  });
+
+  test('unknown route (signed in) shows the custom 404 with its two actions', async ({ page }) => {
+    await signIn(page, 'carol');
     const res = await page.goto('/this-route-does-not-exist');
     expect(res?.status()).toBe(404);
     await expect(page.getByText('Page not found')).toBeVisible();
@@ -104,7 +128,7 @@ test.describe('public pages', () => {
   });
 
   test('every <img> on public pages has an alt attribute', async ({ page }) => {
-    for (const path of [...PUBLIC_PAGES, '/login', '/this-route-does-not-exist']) {
+    for (const path of [...PUBLIC_PAGES, '/login']) {
       await page.goto(path);
       const missing = await page.locator('img:not([alt])').count();
       expect(missing, `${path}: <img> without alt`).toBe(0);

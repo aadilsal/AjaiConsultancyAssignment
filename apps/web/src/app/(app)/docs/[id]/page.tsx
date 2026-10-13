@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { DocumentEditor } from "@/components/editor/document-editor";
 
-export const metadata: Metadata = { title: "Document" };
+export const metadata: Metadata = {
+  title: "Document",
+  description: "Edit and share this document.",
+};
 
 export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

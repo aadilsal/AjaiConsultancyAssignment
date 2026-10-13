@@ -52,3 +52,49 @@ export function validateImportFile(file: File): string | null {
   const r = importFileSchema.safeParse(file);
   return r.success ? null : (r.error.issues[0]?.message ?? "Invalid file");
 }
+
+const LINK_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
+
+/** Link URL: bare domains get https://; only http(s) and mailto are allowed. */
+export const linkSchema = z.object({
+  url: z
+    .string()
+    .trim()
+    .min(1, "Enter a URL")
+    .max(2048, "URL is too long")
+    .transform((v) => (/^[a-z][a-z0-9+.-]*:/i.test(v) ? v : `https://${v}`))
+    .refine((v) => {
+      try {
+        const u = new URL(v);
+        return LINK_PROTOCOLS.has(u.protocol) && (u.protocol === "mailto:" || u.hostname.includes("."));
+      } catch {
+        return false;
+      }
+    }, "Enter a valid web address or mailto: link"),
+});
+export type LinkInput = z.input<typeof linkSchema>;
+export type LinkValues = z.output<typeof linkSchema>;
+
+export const PASSWORD_RULES = [
+  { id: "length", label: "8–72 characters", test: (v: string) => v.length >= 8 && v.length <= 72 },
+  { id: "letter", label: "At least one letter", test: (v: string) => /[A-Za-z]/.test(v) },
+  { id: "number", label: "At least one number", test: (v: string) => /\d/.test(v) },
+] as const;
+
+export const registerSchema = z
+  .object({
+    name: z.string().trim().min(1, "Enter your name").max(80, "Name is too long"),
+    email,
+    password: z
+      .string()
+      .min(8, "Use at least 8 characters")
+      .max(72, "Use at most 72 characters")
+      .regex(/[A-Za-z]/, "Include at least one letter")
+      .regex(/\d/, "Include at least one number"),
+    confirmPassword: z.string().min(1, "Confirm your password"),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords don't match",
+  });
+export type RegisterValues = z.infer<typeof registerSchema>;

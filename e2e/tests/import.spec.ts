@@ -36,7 +36,7 @@ test.describe('import', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('Supported: .txt, .md, .docx — max 5 MB')).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Import', exact: true })).toBeDisabled();
-    await page.keyboard.press('Escape');
+    await dialog.getByRole('button', { name: 'Close' }).click();
     await expect(dialog).toBeHidden();
   });
 
@@ -125,7 +125,7 @@ test.describe('import', () => {
     await expect(dialog.getByRole('button', { name: 'Import', exact: true })).toBeEnabled();
   });
 
-  test('a corrupt .docx is rejected by the server with an inline "couldn\'t read" error', async ({ page }) => {
+  test('a corrupt .docx is rejected by the server with an "Import failed" modal', async ({ page }) => {
     await page.getByRole('button', { name: 'Import file' }).click();
     const dialog = importDialog(page);
     await dialog.getByLabel('Choose file').setInputFiles({
@@ -134,7 +134,10 @@ test.describe('import', () => {
       buffer: Buffer.from('this is not a zip archive'),
     });
     await dialog.getByRole('button', { name: 'Import', exact: true }).click();
-    await expect(dialog.getByRole('alert')).toContainText("couldn't read this file");
+    const failed = page.getByRole('alertdialog', { name: 'Import failed' });
+    await expect(failed).toContainText("couldn't read this file");
+    await failed.getByRole('button', { name: 'OK' }).click();
+    await expect(failed).toBeHidden();
     await expect(page).not.toHaveURL(/\/docs\//);
   });
 

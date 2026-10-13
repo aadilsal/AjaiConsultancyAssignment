@@ -4,8 +4,11 @@ Playwright browser tests for every core flow in the PRD. This is a standalone np
 
 | Spec | Covers |
 |---|---|
-| `tests/auth.spec.ts` | Quick-login as each user, manual login, wrong password, route protection (`/` and `/docs/:id` → `/login`), API 401, logout, Alice → Bob switch |
+| `tests/public.spec.ts` | Public pages (`/welcome`, `/terms`, `/privacy`, custom 404): unique `<title>` + meta description, "Try the live demo" → `/login`, demo accounts, FAQ expand/collapse, `alt` on every image, reduced-motion rendering |
+| `tests/auth.spec.ts` | Quick-login as each user, manual login, wrong password, route protection (`/` → `/welcome`, `/docs/:id` → `/login?next=…`), API 401, logout, Alice → Bob switch |
 | `tests/write.spec.ts` | **Flow 1 (Write)**: New document → rename → H2, bullets, bold → Saved → reload is identical. Also: toolbar `aria-pressed`, Ctrl+B/I/U, H1/H3/numbered list, Undo/Redo, empty title rejected, Escape cancels rename, 200-char cap, persistence across sessions |
+| `tests/toolbar.spec.ts` | Extended toolbar: strikethrough, highlight, inline code, link (and `javascript:` rejection), alignment, checklist, blockquote, code block, horizontal rule, clear formatting, Text style dropdown; each persists after reload |
+| `tests/register.spec.ts` | Sign-up: live validation, success → dashboard, duplicate email, Alice shares with the new user, /login ↔ /register links (marked `fixme` until `/register` is reachable signed-out) |
 | `tests/import.spec.ts` | **Flow 2 (Import)**: `.md`, `.docx`, `.txt` become docs with structure intact; the imported doc is editable and autosaves; `.pdf`, empty, >5 MB and corrupt files are rejected (client-side and server-side) |
 | `tests/share.spec.ts` | **Flow 3 (Share)**, **Flow 4 (Receive)**, **Flow 6 (Revoke)**: inline errors (unknown, self, duplicate), owner-only Share button, editor rename, Viewer role (read-only, no toolbar, 403 on PATCH) |
 | `tests/deny.spec.ts` | **Flow 5 (Deny)**: Carol gets Not found in the UI and 404 on every API route; Bob (editor) gets 403 on delete/share; foreign Origin → 403; stale `baseVersion` → 409 |
@@ -48,7 +51,7 @@ These tests create documents (all with unique, timestamped titles) on the target
 
 ## How the suite is built
 
-- **No reset needed.** The seed is never reset. Each test creates its own docs with `uniqueTitle()`, so tests don't depend on each other or on a fresh DB. Seeded data (Alice: "Q4 Planning Notes", "Private Draft"; Bob: "Bob's Ideas") is only read, never changed. The one exception: the Carol empty-state test assumes nobody has created or shared a doc for Carol.
+- **No reset needed.** The seed is never reset. Each test creates its own docs with `uniqueTitle()`, so tests don't depend on each other or on a fresh DB. Seeded users are Alice Johnson, Bob Smith and Carol Diaz. Seeded data (Alice: "Q4 Planning Notes", "Private Draft"; Bob: "Bob's Ideas") is only read, never changed. The one exception: the Carol empty-state test assumes nobody has created or shared a doc for Carol. `register.spec.ts` creates `e2e+<timestamp>@ajaia.test` users.
 - **Serial.** `workers: 1` and `fullyParallel: false`, because all tests share one database and the login rate limit.
 - **Login rate limit.** `POST /api/auth/login` allows 5 requests per minute per IP. `signIn()` caches each user's session cookie in `e2e/.auth/` (git-ignored) and reuses it, so most tests never call login. `loginAs()` clicks the real "Log in as …" button and is used in `auth.spec.ts`. If it hits the limit, it waits 61 s and tries again.
 - **Accessible locators.** Tests find elements by role and accessible name (`getByRole('button', { name: 'Share' })`). The only test id is `save-status`.

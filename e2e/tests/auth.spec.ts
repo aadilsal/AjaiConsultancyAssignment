@@ -6,14 +6,14 @@ test.describe('auth', () => {
   test('quick-login buttons are shown for all three demo users', async ({ page }) => {
     await page.goto('/login');
     for (const u of Object.values(USERS)) {
-      await expect(page.getByRole('button', { name: `Log in as ${u.name}` })).toBeVisible();
-      await expect(page.getByText(u.email, { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: `Log in as ${u.first}` })).toBeVisible();
+      await expect(page.getByText(u.email).first()).toBeVisible();
     }
     await expect(page.getByText(PASSWORD, { exact: true })).toBeVisible();
   });
 
   for (const user of ['alice', 'bob', 'carol'] as const) {
-    test(`quick-login as ${USERS[user].name} lands on the dashboard with the name shown`, async ({ page }) => {
+    test(`quick-login as ${USERS[user].first} lands on the dashboard with the name shown`, async ({ page }) => {
       await loginAs(page, user);
       await expect(page).toHaveURL(/\/$/);
       await expectDashboard(page, user);
@@ -42,7 +42,7 @@ test.describe('auth', () => {
     }
     await expect(alert).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('textbox', { name: 'Email' })).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByLabel('Password')).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('unknown email gets the same message as a wrong password', async ({ page }) => {

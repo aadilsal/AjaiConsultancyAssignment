@@ -3,6 +3,7 @@ import {
   alertDialog,
   createDocApi,
   deleteFromDashboard,
+  EDITOR_LOAD_MS,
   docRow,
   NOT_FOUND_TEXT,
   openDoc,
@@ -66,6 +67,7 @@ test.describe('dashboard', () => {
     await signIn(page, 'alice');
     await page.getByRole('link', { name: 'Private Draft', exact: true }).click();
     await expect(page).toHaveURL(/\/docs\/[0-9a-f-]{36}/);
+    await expect(page.getByRole('textbox', { name: 'Document body' })).toBeVisible({ timeout: EDITOR_LOAD_MS });
     await expect(page.getByRole('textbox', { name: 'Document title' })).toHaveValue('Private Draft');
     await page.getByRole('link', { name: 'Back to documents' }).click();
     await expect(page).toHaveURL(/\/$/);
@@ -112,7 +114,7 @@ test.describe('dashboard', () => {
 
     await bob.page.reload();
     await expect(bob.page.getByRole('heading', { name: /^Shared with me/ })).toBeVisible();
-    await expect(bob.page.getByRole('list', { name: /^Loading/ })).toHaveCount(0);
+    await expect(bob.page.getByLabel(/^Loading (My documents|Shared with me)/)).toHaveCount(0);
     await expect(docRow(bob.page, 'Shared with me', title)).toHaveCount(0);
     await bob.page.goto(`/docs/${id}`);
     await expect(bob.page.getByText(NOT_FOUND_TEXT)).toBeVisible();

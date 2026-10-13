@@ -4,18 +4,27 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Keyboard, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button, Tip, DIALOG_CONTENT } from "../ui";
-import { useModKey } from "./toolbar";
+import { SHORTCUTS, useModKey } from "./toolbar";
 
-const SHORTCUTS: { label: string; keys: (mod: string) => string }[] = [
-  { label: "Bold", keys: (m) => `${m}B` },
-  { label: "Italic", keys: (m) => `${m}I` },
-  { label: "Underline", keys: (m) => `${m}U` },
-  { label: "Heading 1 / 2 / 3", keys: (m) => `${m}Alt+1 / 2 / 3` },
-  { label: "Bullet list", keys: (m) => `${m}Shift+8` },
-  { label: "Numbered list", keys: (m) => `${m}Shift+7` },
-  { label: "Undo", keys: (m) => `${m}Z` },
-  { label: "Redo", keys: (m) => `${m}Shift+Z` },
-  { label: "Show shortcuts", keys: (m) => `${m}/` },
+const ROWS: { label: string; keys: string }[] = [
+  { label: "Bold", keys: SHORTCUTS.bold },
+  { label: "Italic", keys: SHORTCUTS.italic },
+  { label: "Underline", keys: SHORTCUTS.underline },
+  { label: "Strikethrough", keys: SHORTCUTS.strike },
+  { label: "Highlight", keys: SHORTCUTS.highlight },
+  { label: "Inline code", keys: SHORTCUTS.code },
+  { label: "Link", keys: SHORTCUTS.link },
+  { label: "Heading 1 / 2 / 3", keys: "Alt+1 / 2 / 3" },
+  { label: "Align left / center / right / justify", keys: "Shift+L / E / R / J" },
+  { label: "Bullet list", keys: SHORTCUTS.bullet },
+  { label: "Numbered list", keys: SHORTCUTS.ordered },
+  { label: "Checklist", keys: SHORTCUTS.task },
+  { label: "Blockquote", keys: SHORTCUTS.quote },
+  { label: "Code block", keys: SHORTCUTS.codeBlock },
+  { label: "Undo", keys: SHORTCUTS.undo },
+  { label: "Redo", keys: SHORTCUTS.redo },
+  { label: "Print", keys: "P" },
+  { label: "Show shortcuts", keys: "/" },
 ];
 
 export function ShortcutsDialog() {
@@ -55,13 +64,13 @@ export function ShortcutsDialog() {
             </Dialog.Close>
           </div>
           <Dialog.Description className="sr-only">Formatting and editing shortcuts for the document editor.</Dialog.Description>
-          <dl className="mt-4 divide-y divide-line text-sm">
-            {SHORTCUTS.map((s) => (
+          <dl className="mt-4 max-h-[60dvh] divide-y divide-line overflow-y-auto text-sm">
+            {ROWS.map((s) => (
               <div key={s.label} className="flex items-center justify-between gap-4 py-2">
                 <dt>{s.label}</dt>
                 <dd>
                   <kbd className="tabular rounded-sm border border-line bg-canvas px-1.5 py-0.5 font-sans text-xs text-muted">
-                    {s.keys(mod)}
+                    {mod}{s.keys}
                   </kbd>
                 </dd>
               </div>

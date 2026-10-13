@@ -2,20 +2,17 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, useReducedMotion } from "motion/react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { clsx } from "clsx";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api, ApiError } from "@/lib/api";
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, isDemoAccountKey } from "@/lib/demo-accounts";
 import { loginSchema, type LoginValues } from "@/lib/validation";
 import { Avatar, Button, FieldError, TextInput } from "@/components/ui";
 
-const DEMO_PASSWORD = "demo1234";
-
-const DEMO_USERS = [
-  { name: "Alice", email: "alice@ajaia.test", role: "Owner", note: "Creates, formats and shares documents." },
-  { name: "Bob", email: "bob@ajaia.test", role: "Collaborator", note: "Sees Alice's document under Shared with me." },
-  { name: "Carol", email: "carol@ajaia.test", role: "Outsider", note: "Gets Not found on Alice's document URL." },
-] as const;
+const DEMO_USERS = DEMO_ACCOUNTS;
 
 /** Only allow same-site relative redirects (prevents open redirects via ?next=). */
 function safeNext(next: string | null): string {
@@ -28,6 +25,11 @@ export function LoginForm() {
   const params = useSearchParams();
   const reduce = useReducedMotion();
   const [quickPending, setQuickPending] = useState<string | null>(null);
+  // /login?as=alice highlights that demo account and signs in with it once (landing-page links).
+  const asParam = params.get("as")?.toLowerCase() ?? null;
+  const preselected = isDemoAccountKey(asParam) ? asParam : null;
+  const preselectedRef = useRef<HTMLButtonElement>(null);
+  const autoRanRef = useRef(false);
 
   const {
     register,
@@ -66,6 +68,15 @@ export function LoginForm() {
     const ok = await signIn({ email: emailAddr, password: DEMO_PASSWORD });
     if (!ok) setQuickPending(null);
   }
+
+  useEffect(() => {
+    if (!preselected || autoRanRef.current) return;
+    autoRanRef.current = true;
+    preselectedRef.current?.focus();
+    const account = DEMO_ACCOUNTS.find((a) => a.key === preselected);
+    if (account) void quickLogin(account.email);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once for the ?as= deep link
+  }, [preselected]);
 
   const busy = isSubmitting || quickPending !== null;
   const rootError = errors.root?.message;
@@ -127,6 +138,13 @@ export function LoginForm() {
         </form>
       </div>
 
+      <p className="mt-4 text-center text-sm text-muted">
+        New here?{" "}
+        <Link href="/register" className="rounded-sm font-medium text-primary underline-offset-4 hover:underline">
+          Create an account
+        </Link>
+      </p>
+
       <div className="mt-6">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-sm font-semibold">Demo accounts</h2>
@@ -138,7 +156,13 @@ export function LoginForm() {
           {DEMO_USERS.map((u) => {
             const noteId = `demo-note-${u.name.toLowerCase()}`;
             return (
-              <li key={u.email} className="flex items-center gap-3 px-4 py-3">
+              <li
+                key={u.email}
+                className={clsx(
+                  "flex items-center gap-3 px-4 py-3 transition-colors duration-150",
+                  preselected === u.key && "bg-primary-soft",
+                )}
+              >
                 <Avatar name={u.name} />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2 text-sm font-medium">
@@ -150,7 +174,8 @@ export function LoginForm() {
                   </p>
                 </div>
                 <Button
-                  variant="ghost"
+                  ref={preselected === u.key ? preselectedRef : undefined}
+                  variant={preselected === u.key ? "primary" : "ghost"}
                   size="sm"
                   aria-describedby={noteId}
                   loading={quickPending === u.email}

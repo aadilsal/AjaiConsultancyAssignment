@@ -10,11 +10,20 @@ const sourceSerif = Source_Serif_4({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "Ajaia Docs", template: "%s · Ajaia Docs" },
-  description: "Write, format and share documents.",
+  description: "A calm, focused document editor: rich text, autosave, file import and simple sharing.",
+  applicationName: "Ajaia Docs",
   icons: { icon: "/icon.svg" },
-  robots: { index: false, follow: false },
+  openGraph: {
+    type: "website",
+    siteName: "Ajaia Docs",
+    title: "Ajaia Docs",
+    description: "Write, format and share documents with your team.",
+  },
 };
 
 export const viewport: Viewport = {
