@@ -1,9 +1,10 @@
 import { HttpStatus } from '@nestjs/common';
-import { generateJSON } from '@tiptap/html/server';
+import { DOMParser as PMDOMParser } from '@tiptap/pm/model';
+import { JSDOM } from 'jsdom';
 import mammoth from 'mammoth';
 import { marked } from 'marked';
 import { AppError } from '../common/app-error';
-import { editorExtensions, editorSchema, TiptapJSON } from '../editor/extensions';
+import { editorSchema, TiptapJSON } from '../editor/extensions';
 
 export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 export type ImportKind = 'txt' | 'md' | 'docx';
@@ -69,12 +70,18 @@ async function toHtml(buffer: Buffer, kind: ImportKind): Promise<string> {
   return value;
 }
 
+// Schema-driven parse: unknown tags (script, style, img...) are dropped.
+function htmlToDoc(html: string): TiptapJSON {
+  const { document } = new JSDOM(`<!doctype html><html><body>${html}</body></html>`).window;
+  return PMDOMParser.fromSchema(editorSchema).parse(document.body).toJSON() as TiptapJSON;
+}
+
 // Pure: file bytes -> schema-valid Tiptap JSON (throws UNREADABLE_FILE).
 export async function convertFileToDoc(buffer: Buffer, filename: string): Promise<TiptapJSON> {
   const kind = assertSupportedFile(filename);
   let json: TiptapJSON;
   try {
-    json = generateJSON(await toHtml(buffer, kind), editorExtensions) as TiptapJSON;
+    json = htmlToDoc(await toHtml(buffer, kind));
     editorSchema.nodeFromJSON(json).check();
   } catch {
     throw unreadableFile();

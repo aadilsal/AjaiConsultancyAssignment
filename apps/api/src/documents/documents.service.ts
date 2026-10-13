@@ -93,7 +93,9 @@ export class DocumentsService {
         currentVersion: current.version,
       });
     }
-    return this.prisma.document.findUniqueOrThrow({ where: { id }, select });
+    const saved = await this.prisma.document.findUniqueOrThrow({ where: { id }, select });
+    // Report the version this write produced, not one a concurrent save may have bumped since.
+    return { ...saved, version: dto.baseVersion! + 1 };
   }
 
   async remove(userId: string, id: string): Promise<void> {
