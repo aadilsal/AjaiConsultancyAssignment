@@ -8,7 +8,7 @@ Oct 13, 2026 · @Aadil Salman Butt
 > |---|---|---|---|
 > | Backend | Next.js route handlers | **NestJS 11** API (`apps/api`) + **Next.js 15** frontend (`apps/web`) | Team standard: Next.js + TypeScript frontend, NestJS backend |
 > | Hosting | Vercel + Neon | **Own Oracle VM** (51.170.90.86), isolated Docker Compose project with its **own Postgres 17 container** | Infra we already run; no third-party accounts for reviewers; isolated from other apps on the VM |
-> | Live URL | HTTPS Vercel URL | `http://51.170.90.86:<port>` (raw IP, HTTP) | No domain for this submission; the session cookie `Secure` flag is configurable and documented |
+> | Live URL | HTTPS Vercel URL | `https://docs.51-170-90-86.sslip.io` (Let's Encrypt via the VM's existing Caddy) | No custom domain needed; real TLS, Secure cookies, HSTS |
 > | Tests | Vitest | **Jest + Supertest** (NestJS default) | Zero-config with Nest decorators; same test plan |
 > | Validation | Zod | **class-validator DTOs + global `ValidationPipe`** | NestJS-native; same "one schema per endpoint" idea |
 > | API docs | — | **OpenAPI / Swagger UI at `/api/docs`** + [API.md](API.md) | Reviewers can explore the contract without reading code |

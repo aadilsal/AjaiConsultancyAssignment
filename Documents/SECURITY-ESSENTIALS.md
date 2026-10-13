@@ -16,7 +16,7 @@ What Ajaia Docs protects, from whom, and how. The controls map to the OWASP Top 
 | Stranger with a URL | Read or edit a doc whose link they saw | `AccessService` on every route; 404 for no access; UUID ids |
 | Grantee overreaching | Delete, re-share or (as a viewer) edit a doc | Role check per action → 403; role re-read on every request |
 | Hostile uploaded file | XSS, parser crash, resource exhaustion | 5 MB cap, allow-list, memory-only parse, Tiptap schema strips unknown markup |
-| Network attacker | Steal the cookie or read traffic | **Not mitigated on the live URL (plain HTTP).** See §7 |
+| Network attacker | Steal the cookie or read traffic | HTTPS (Let's Encrypt) + HSTS + `Secure` cookie; app port bound to localhost |
 | Credential guesser | Brute-force a password | 5 login attempts/min/IP, generic error, bcrypt |
 | Cross-site attacker | Make the browser send a state-changing request | SameSite=Lax + JSON-only API + Origin allow-list (§3) |
 
@@ -77,7 +77,7 @@ Trust boundary: the browser is untrusted. The UI hides Share, Delete and the too
 
 | Gap | Risk | Why accepted now | Fix |
 |---|---|---|---|
-| **Plain HTTP on a raw IP** | Cookie not `Secure`; credentials, session and content travel unencrypted and can be sniffed or modified on hostile networks | No domain for this submission | Point a domain at the VM, put **Caddy** in front (automatic Let's Encrypt TLS), set `COOKIE_SECURE=true`, add HSTS, close `WEB_PORT` to the public |
+| **Shared reverse proxy** | TLS is terminated by the Caddy instance that also serves other apps on the VM | One VM for all demos | Give Ajaia its own proxy/host for production; today only one site block was added and the others were verified unaffected |
 | Demo passwords are public | Anyone can log in as Alice, Bob or Carol | By design: reviewers need zero setup; the data is demo-only | Real signup, unique passwords, remove the quick-login buttons |
 | No session revocation list | A stolen cookie works until it expires (7 days), even after logout | Stateless JWT keeps the scope small | `sessions` table or `tokenVersion` on the user, checked per request; shorter TTL + refresh |
 | No account lockout | Slow distributed guessing is still possible | The 5/min/IP rate limit is enough for a demo | Per-account backoff, lockout after N failures, alerting |

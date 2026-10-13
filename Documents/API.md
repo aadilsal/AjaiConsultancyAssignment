@@ -5,7 +5,7 @@ REST + JSON API for Ajaia Docs (NestJS 11). This file is the human-readable cont
 | | |
 |---|---|
 | **Base URL** | `/api`, same-origin through the Next.js rewrite (`web` → `http://api:4000/api`). Every route is also served at `/api/v1/...` |
-| **Live** | `http://51.170.90.86:<WEB_PORT>/api` |
+| **Live** | `https://docs.51-170-90-86.sslip.io/api` |
 | **Local** | `http://localhost:3000/api` (through Next.js) or `http://localhost:4000/api` (API directly) |
 | **Swagger UI** | `/api/docs` |
 | **OpenAPI JSON** | `/api/docs-json` |
@@ -135,7 +135,7 @@ Request:
 Errors: `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS`, `403 BAD_ORIGIN`, `429 RATE_LIMITED` (5/min/IP).
 
 ```bash
-BASE=http://51.170.90.86:<WEB_PORT>
+BASE=https://docs.51-170-90-86.sslip.io
 curl -s -c cookies.txt -H "Origin: $BASE" -H "Content-Type: application/json" \
   -d '{"email":"alice@ajaia.test","password":"demo1234"}' $BASE/api/auth/login
 ```

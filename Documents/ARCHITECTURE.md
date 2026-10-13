@@ -159,7 +159,7 @@ Preserved: headings H1–H3, paragraphs, bold, italic, underline, strike, bullet
 
 - Users are seeded (no signup). Passwords are bcrypt hashes; the demo password is public on purpose.
 - `POST /api/auth/login` verifies the hash and sets `ajaia_session`: an HS256 JWT `{sub: userId}`, 7-day expiry, signed with `SESSION_SECRET` (≥ 32 chars, validated at boot).
-- Cookie: `HttpOnly`, `SameSite=Lax`, `Path=/`; `Secure` is controlled by `COOKIE_SECURE`. The live URL is plain HTTP on a raw IP, so it runs with `COOKIE_SECURE=false`; behind HTTPS it must be `true`.
+- Cookie: `HttpOnly`, `SameSite=Lax`, `Path=/`; `Secure` is controlled by `COOKIE_SECURE`. The live URL is HTTPS (Caddy + Let's Encrypt), so it runs with `COOKIE_SECURE=true` and HSTS; `false` is only for plain-HTTP local runs.
 - A global Nest guard authenticates every route except those marked `@Public()` (login, logout, health, API docs).
 - Next.js middleware redirects to `/login` when the cookie is missing — UX only; the API is the authority and returns 401.
 
@@ -193,11 +193,11 @@ A global exception filter produces it for validation errors, HTTP exceptions, up
 | Folders, search, trash | Dashboard nice-to-haves | Two lists sorted by last edited |
 | Public links | A second access model | Share with a named existing user |
 | PDF import | Parsing cost, poor structure | .txt, .md, .docx only |
-| HTTPS / domain | No domain for this submission | Plain HTTP on the VM IP; documented risk |
+| Custom domain | Not needed for a demo | Free `sslip.io` hostname with a real Let's Encrypt certificate via the VM's existing Caddy |
 
 ## 12. Known limitations
 
-- Served over HTTP, so the session cookie is not `Secure` on the live URL.
+- Served on a free `sslip.io` hostname rather than a custom domain (TLS is real; only the name is generic).
 - Conflict detection, not merge: concurrent editors see a conflict banner.
 - No server-side session revocation; logout clears the cookie and tokens expire after 7 days.
 - The dashboard does not live-update; a refresh shows newly shared or revoked documents.
