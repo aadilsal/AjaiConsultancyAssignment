@@ -16,7 +16,7 @@ Browser ──▶ web (Next.js 15, :3000) ──/api/* rewrite──▶ api (Nes
 1. **Every document/share route goes through `AccessService.requireAccess()`.** No inline ownership checks.
 2. **No access → 404, never 403.** 403 only when the caller already has some access (editor deleting, viewer editing).
 3. **Content is Tiptap JSON**, validated server-side against the schema. Never store or render HTML.
-4. **Web and API share one editor schema:** `StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false })`. Change both or neither.
+4. **Web and API share one editor schema:** `StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: { openOnClick: false, autolink: true, protocols: ['http', 'https', 'mailto'], HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' } } })`, `TextAlign.configure({ types: ['heading', 'paragraph'] })`, `Highlight`, `TaskList`, `TaskItem.configure({ nested: true })`. Change both or neither. Link hrefs must be http/https/mailto (rejected on save, stripped on import).
 5. **Content saves are optimistic-locked:** `baseVersion` required; conditional `UPDATE … WHERE version = baseVersion`; mismatch → 409.
 6. **One error shape:** `{ "error": { "code", "message", ...extra } }`. Messages are user-facing.
 7. **Uploads stay in memory** (≤ 5 MB, .txt/.md/.docx); only the converted JSON is stored.

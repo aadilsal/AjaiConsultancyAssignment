@@ -108,7 +108,7 @@ The UI hides Share, Delete and the toolbar based on the `access` field the API r
 
 ## 6. Editing, autosave and conflicts
 
-**Schema parity.** Web and API both configure Tiptap with exactly `StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false })`. The API validates every save with `schema.nodeFromJSON(content).check()`, so malformed or foreign nodes are rejected (400) instead of stored.
+**Schema parity.** Web and API both configure Tiptap with exactly `StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: { openOnClick: false, autolink: true, protocols: ['http', 'https', 'mailto'], HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' } } })`, `TextAlign.configure({ types: ['heading', 'paragraph'] })`, `Highlight`, `TaskList`, `TaskItem.configure({ nested: true })` (API: `apps/api/src/editor/extensions.ts`). The API validates every save with `schema.nodeFromJSON(content).check()` plus attribute checks the schema does not enforce: link `href` must be http/https/mailto (so `javascript:` is never stored), `textAlign` must be left/center/right/justify, heading level 1–3. Anything else is rejected (400 `INVALID_CONTENT`) instead of stored.
 
 **Autosave state machine (client, `useAutosave`):**
 
@@ -145,7 +145,8 @@ upload (multipart, ≤ 5 MB, memory only)
   → .txt  : paragraphs (HTML-escaped)
     .md   : marked → HTML
     .docx : mammoth → HTML (Heading 1–3 → h1–h3, underline → <u>)
-  → Tiptap generateJSON(html, extensions)  — schema drops scripts, styles, images, unknown tags
+  → jsdom + ProseMirror DOMParser.fromSchema(editor schema) — drops scripts, styles, images, unknown tags
+    (GFM task lists mapped to taskList/taskItem; link marks with non-http/https/mailto hrefs stripped)
   → zero content nodes → 422
   → new document owned by the caller, title = filename without extension
 ```

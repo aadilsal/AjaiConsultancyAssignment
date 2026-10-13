@@ -12,6 +12,7 @@ Oct 13, 2026 · @Aadil Salman Butt
 > | Tests | Vitest | **Jest + Supertest** (NestJS default) | Zero-config with Nest decorators; same test plan |
 > | Validation | Zod | **class-validator DTOs + global `ValidationPipe`** | NestJS-native; same "one schema per endpoint" idea |
 > | API docs | — | **OpenAPI / Swagger UI at `/api/docs`** + [API.md](API.md) | Reviewers can explore the contract without reading code |
+> | Real auth | Seeded users only (signup cut) | **`POST /api/auth/register`** (name, email, password) + seeded demo users | Simple email+password registration added at the user's request; no email verification, reset or OAuth |
 > | Timebox | 4–6 h | **~1–2 h build**, built in parallel; the rest on docs and video | Video and written judgment carry most of the grade |
 >
 > See [ARCHITECTURE.md](ARCHITECTURE.md) for the resulting design.

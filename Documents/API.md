@@ -4,7 +4,7 @@ REST + JSON API for Ajaia Docs (NestJS 11). This file is the human-readable cont
 
 | | |
 |---|---|
-| **Base URL** | `/api`, same-origin through the Next.js rewrite (`web` → `http://api:4000/api`) |
+| **Base URL** | `/api`, same-origin through the Next.js rewrite (`web` → `http://api:4000/api`). Every route is also served at `/api/v1/...` |
 | **Live** | `http://51.170.90.86:<WEB_PORT>/api` |
 | **Local** | `http://localhost:3000/api` (through Next.js) or `http://localhost:4000/api` (API directly) |
 | **Swagger UI** | `/api/docs` |
@@ -16,7 +16,7 @@ REST + JSON API for Ajaia Docs (NestJS 11). This file is the human-readable cont
 
 ## Conventions
 
-**Authentication.** Every route requires the session cookie except `POST /auth/login`, `POST /auth/logout`, `GET /health` and `/docs*`. A missing, expired or invalid cookie → `401 UNAUTHENTICATED`.
+**Authentication.** Every route requires the session cookie except `POST /auth/login`, `POST /auth/register`, `POST /auth/logout`, `GET /health`, `/health/live`, `/health/ready` and `/docs*`. A missing, expired or invalid cookie → `401 UNAUTHENTICATED`.
 
 **CSRF.** The session cookie is `SameSite=Lax`, and POST, PATCH and DELETE with an `Origin` header not in `ALLOWED_ORIGINS` get `403 BAD_ORIGIN`. Browsers send `Origin` automatically; requests without one (curl, server-to-server) are allowed.
 
@@ -24,18 +24,38 @@ REST + JSON API for Ajaia Docs (NestJS 11). This file is the human-readable cont
 
 **Validation.** Unknown body fields are rejected (`whitelist` + `forbidNonWhitelisted`) → `400 VALIDATION_ERROR`.
 
+**Versioning.** URI versioning: `/api/...` (unversioned, used by the web app) and `/api/v1/...` hit the same handlers. A future breaking change ships as `/api/v2`.
+
+**Request IDs.** Send `X-Request-Id` (`[A-Za-z0-9._:-]`, ≤ 128 chars) or the API generates a UUID. It is echoed in the response header, included as `requestId` in every error body and in every log line.
+
+**Media types.** POST/PUT/PATCH bodies must be `application/json` (import: `multipart/form-data`), otherwise `415 UNSUPPORTED_MEDIA_TYPE`. JSON bodies are capped at 2 MB.
+
+**Caching and compression.** Every API response sends `Cache-Control: no-store`. Responses are gzip-compressed when the client accepts it.
+
+**Created resources.** `201` responses (create, import, share) carry a `Location` header pointing at the new resource.
+
+**Rate-limit headers.** Responses include `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`; a `429` adds `Retry-After` (seconds).
+
+**Unknown routes.** Unknown paths or methods → `404 NOT_FOUND` in the error envelope.
+
+**Logging.** One structured JSON line per request in production (`method`, `path`, `status`, `durationMs`, `requestId`, `userId`); 5xx lines add the stack. Bodies, cookies and passwords are never logged.
+
+**Proxies.** `TRUST_PROXY_HOPS` (default 1; 2 behind Caddy + Next.js) sets how many proxy hops are trusted, so the client IP used for rate limiting is real. HSTS is sent only when `COOKIE_SECURE=true`.
+
 ## Errors
 
 Every non-2xx response uses one envelope. `message` is user-ready copy; some codes add extra fields.
 
 ```json
-{ "error": { "code": "VERSION_CONFLICT", "message": "This document changed elsewhere.", "currentVersion": 7 } }
+{ "error": { "code": "VERSION_CONFLICT", "message": "This document changed elsewhere.", "currentVersion": 7, "requestId": "6f1c2a7e-2b9e-4d8e-9a43-0f2b8f3f9d11" } }
 ```
+
+Every error body includes `requestId` (same value as the `X-Request-Id` response header).
 
 | Code | HTTP | When | Extra fields |
 |---|---|---|---|
 | `VALIDATION_ERROR` | 400 | Body or param fails its DTO (bad email, empty title, unknown field, `content` without `baseVersion`) | `details: string[]` |
-| `INVALID_CONTENT` | 400 | `content` is not a valid Tiptap doc for the editor schema | — |
+| `INVALID_CONTENT` | 400 | `content` is not a valid Tiptap doc for the editor schema, or has unsafe attrs (link href not http/https/mailto, bad `textAlign`, heading level outside 1–3) | — |
 | `UNSUPPORTED_TYPE` | 400 | Import is not `.txt`, `.md` or `.docx` | — |
 | `EMPTY_FILE` | 400 | Import is 0 bytes or missing | — |
 | `UNAUTHENTICATED` | 401 | No, expired or invalid session cookie | — |
@@ -44,8 +64,10 @@ Every non-2xx response uses one envelope. `message` is user-ready copy; some cod
 | `BAD_ORIGIN` | 403 | State-changing request whose `Origin` header is present and not allow-listed (no `Origin`, e.g. curl, is allowed; SameSite=Lax is the primary CSRF defence) | — |
 | `NOT_FOUND` | 404 | Doc missing, id malformed, **or caller has no access** | — |
 | `USER_NOT_FOUND` | 404 | Share target email is not a user | — |
+| `EMAIL_TAKEN` | 409 | Register with an email that already has an account (case-insensitive) | — |
 | `ALREADY_SHARED` | 409 | Doc is already shared with that user | — |
 | `VERSION_CONFLICT` | 409 | `baseVersion` ≠ current version | `currentVersion: number` |
+| `UNSUPPORTED_MEDIA_TYPE` | 415 | Body is not `application/json` (or not `multipart/form-data` on import) | — |
 | `CONTENT_TOO_LARGE` | 413 | Serialized content > 1 MB | — |
 | `FILE_TOO_LARGE` | 413 | Import > 5 MB | — |
 | `SELF_SHARE` | 422 | Owner shares with their own email | — |
@@ -118,6 +140,21 @@ curl -s -c cookies.txt -H "Origin: $BASE" -H "Content-Type: application/json" \
   -d '{"email":"alice@ajaia.test","password":"demo1234"}' $BASE/api/auth/login
 ```
 
+### `POST /api/auth/register`
+
+Public, 5/min/IP. Creates an account and signs in (same cookie as login).
+```json
+{ "name": "Dana Lee", "email": "dana@ajaia.test", "password": "secret123" }
+```
+`name` trimmed, 1–80 chars · `email` valid, trimmed and lowercased, ≤ 254 · `password` 8–72 chars with at least one letter and one number (bcrypt cost 10).
+
+`201 Created` + `Location: /api/auth/me` + `Set-Cookie: ajaia_session=…` → `{ "user": { "id", "email", "name" } }`
+
+Errors: `400 VALIDATION_ERROR`, `403 BAD_ORIGIN`, `409 EMAIL_TAKEN` ("An account with this email already exists."), `415 UNSUPPORTED_MEDIA_TYPE`, `429 RATE_LIMITED`.
+```bash
+curl -s -c cookies.txt -H 'Content-Type: application/json'   -d '{"name":"Dana Lee","email":"dana@ajaia.test","password":"secret123"}' $BASE/api/auth/register
+```
+
 ### `POST /api/auth/logout`
 
 Public (idempotent). Clears the cookie. `204 No Content`. Errors: `403 BAD_ORIGIN`.
@@ -143,6 +180,14 @@ curl -s -b cookies.txt $BASE/api/auth/me
 Public. Pings the database; used by the Docker healthcheck.
 
 `200 OK` → `{ "status": "ok", "db": "ok" }` · `503 Service Unavailable` → `{ "status": "error", "db": "down" }`
+
+### `GET /api/health/live`
+
+Public. Liveness only (process is up, no dependencies). `200 OK` → `{ "status": "ok", "uptimeSeconds": 42 }`
+
+### `GET /api/health/ready`
+
+Public. Readiness (database reachable). Same responses as `GET /api/health`.
 ```bash
 curl -s $BASE/api/health
 ```
@@ -151,7 +196,9 @@ curl -s $BASE/api/health
 
 ### `GET /api/documents`
 
-Signed in. Both lists are sorted by `updatedAt` desc.
+Signed in. Both lists are sorted by `updatedAt` desc (ties by `id` desc).
+
+Query (optional): `limit` (1–100, default 50, applied to each list) and `cursor`. Each list returns a `nextCursor` (`null` when there is no more). Pass one of them back as `?cursor=` to get the next page of **that list only** (the other array comes back empty). Bad `limit`/`cursor` → `400 VALIDATION_ERROR`.
 ```json
 {
   "owned": [
@@ -160,10 +207,11 @@ Signed in. Both lists are sorted by `updatedAt` desc.
       "owner": { "id": "0b6f6d1e-3c1a-4e8f-9a51-2f0e6a8c1d11", "name": "Alice", "email": "alice@ajaia.test" },
       "access": "owner" }
   ],
-  "shared": []
+  "shared": [],
+  "nextCursor": { "owned": null, "shared": null }
 }
 ```
-Errors: `401`.
+Errors: `400 VALIDATION_ERROR`, `401`.
 ```bash
 curl -s -b cookies.txt $BASE/api/documents
 ```
