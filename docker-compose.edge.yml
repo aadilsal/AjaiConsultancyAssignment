@@ -1,0 +1,17 @@
+# HTTPS edge on the shared VM: the existing Caddy (jobkit project) terminates TLS and proxies to `web`.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.edge.yml up -d
+services:
+  web:
+    # Only reachable from the VM itself; public traffic arrives via Caddy over HTTPS.
+    ports: !override
+      - "127.0.0.1:${WEB_PORT:-8081}:3000"
+    networks:
+      ajaia_docs_net: {}
+      edge:
+        aliases:
+          - ajaia-docs-web
+
+networks:
+  edge:
+    name: ${EDGE_NETWORK:-jobkit_default}
+    external: true
