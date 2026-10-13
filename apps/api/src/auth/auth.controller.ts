@@ -6,7 +6,7 @@ import { Throttle } from '@nestjs/throttler';
 import * as bcrypt from 'bcryptjs';
 import type { CookieOptions, Response } from 'express';
 import { AppError } from '../common/app-error';
-import { AuthUser, CurrentUser, Public } from '../common/decorators';
+import { CurrentUser, Public, type AuthUser } from '../common/decorators';
 import { ErrorResponse } from '../common/error-response.dto';
 import { SESSION_COOKIE } from '../common/guards';
 import { PrismaService } from '../prisma/prisma.service';

@@ -12,6 +12,8 @@ import {
   Patch,
   PayloadTooLargeException,
   Post,
+  Query,
+  Res,
   UploadedFile,
   UseFilters,
   UseInterceptors,
@@ -19,9 +21,10 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
+import type { Response } from 'express';
 import { memoryStorage } from 'multer';
 import { AppError } from '../common/app-error';
-import { AuthUser, CurrentUser } from '../common/decorators';
+import { CurrentUser, type AuthUser } from '../common/decorators';
 import { ErrorResponse } from '../common/error-response.dto';
 import { AllExceptionsFilter } from '../common/filters/all-exceptions.filter';
 import { SESSION_COOKIE } from '../common/guards';
@@ -34,6 +37,7 @@ import {
   DocListDto,
   DocSavedDto,
   ImportFileDto,
+  ListDocumentsQuery,
   ShareDto,
   ShareListDto,
   UpdateDocumentDto,
@@ -68,8 +72,9 @@ export class DocumentsController {
   @Get()
   @ApiOperation({ summary: 'List documents I own and documents shared with me' })
   @ApiResponse({ status: 200, type: DocListDto })
-  list(@CurrentUser() user: AuthUser): Promise<DocListDto> {
-    return this.docs.list(user.id);
+  @E(400, 'VALIDATION_ERROR (bad limit or cursor)')
+  list(@CurrentUser() user: AuthUser, @Query() query: ListDocumentsQuery): Promise<DocListDto> {
+    return this.docs.list(user.id, query.limit, query.cursor);
   }
 
   @Post()
@@ -77,8 +82,15 @@ export class DocumentsController {
   @ApiResponse({ status: 201, type: DocDetailDto })
   @E(400, 'VALIDATION_ERROR')
   @E(403, 'BAD_ORIGIN')
-  create(@CurrentUser() user: AuthUser, @Body() dto: CreateDocumentDto): Promise<DocDetailDto> {
-    return this.docs.create(user.id, dto.title);
+  @E(415, 'UNSUPPORTED_MEDIA_TYPE')
+  async create(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateDocumentDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<DocDetailDto> {
+    const doc = await this.docs.create(user.id, dto.title);
+    res.location(`/api/documents/${doc.id}`);
+    return doc;
   }
 
   @Post('import')
@@ -92,9 +104,11 @@ export class DocumentsController {
   @E(403, 'BAD_ORIGIN')
   @E(413, 'FILE_TOO_LARGE')
   @E(422, 'UNREADABLE_FILE')
+  @E(415, 'UNSUPPORTED_MEDIA_TYPE (not multipart/form-data)')
   async import(
     @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File | undefined,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<DocDetailDto> {
     if (!file || file.size === 0) {
       throw new AppError(HttpStatus.BAD_REQUEST, 'EMPTY_FILE', 'The file is empty');
@@ -102,7 +116,9 @@ export class DocumentsController {
     const filename = Buffer.from(file.originalname, 'latin1').toString('utf8');
     assertSupportedFile(filename, file.mimetype);
     const content = await convertFileToDoc(file.buffer, filename);
-    return this.docs.create(user.id, titleFromFilename(filename), content as Prisma.InputJsonValue);
+    const doc = await this.docs.create(user.id, titleFromFilename(filename), content as Prisma.InputJsonValue);
+    res.location(`/api/documents/${doc.id}`);
+    return doc;
   }
 
   @Get(':id')
@@ -156,12 +172,15 @@ export class DocumentsController {
   @E(404, 'NOT_FOUND | USER_NOT_FOUND')
   @E(409, 'ALREADY_SHARED')
   @E(422, 'SELF_SHARE')
-  createShare(
+  async createShare(
     @CurrentUser() user: AuthUser,
     @Param('id', UuidParam) id: string,
     @Body() dto: CreateShareDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<ShareDto> {
-    return this.shares.create(user.id, id, dto);
+    const share = await this.shares.create(user.id, id, dto);
+    res.location(`/api/documents/${id}/shares/${share.userId}`);
+    return share;
   }
 
   @Delete(':id/shares/:userId')
