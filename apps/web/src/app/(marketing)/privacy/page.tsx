@@ -31,8 +31,9 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>
-          <strong>Account details</strong>: the name and email of the three seeded demo accounts, and a hashed password.
-          There is no sign-up, so we never collect your own email.
+          <strong>Account details</strong>: a name, an email address and a hashed password. For the three demo accounts
+          these are made up. If you create an account, we store the name and email you enter; using a demo account
+          means we never see yours.
         </li>
         <li>
           <strong>Documents</strong>: the title and content of documents you create or import, stored as JSON, plus who
@@ -101,7 +102,7 @@ export default function PrivacyPage() {
       updated="October 13, 2026"
       intro={
         <p>
-          The demo stores as little as it can: three demo accounts, the documents you write and one session cookie.
+          The demo stores as little as it can: your account details, the documents you write and one session cookie.
         </p>
       }
       sections={SECTIONS}

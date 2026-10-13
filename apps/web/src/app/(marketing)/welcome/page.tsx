@@ -1,12 +1,17 @@
-import { ArrowRight, ArrowUpRight, FileText, KeyRound, LogIn, Upload, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CircleCheck, KeyRound, UserPlus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { EditorMock } from "@/components/marketing/editor-mock";
+import { Bento } from "@/components/marketing/bento";
 import { Faq, type FaqItem } from "@/components/marketing/faq";
+import { HowItWorks } from "@/components/marketing/how-it-works";
 import { DOCS_URL } from "@/components/marketing/links";
+import { LiveEditorDemo } from "@/components/marketing/live-editor-demo";
 import { Magnetic } from "@/components/marketing/magnetic";
+import { FormatMarquee } from "@/components/marketing/marquee";
+import { QuickLoginButton } from "@/components/marketing/quick-login-button";
 import { Reveal, WordReveal } from "@/components/marketing/reveal";
+import { TrustStrip } from "@/components/marketing/trust-strip";
 
 const DESCRIPTION =
   "A focused document editor with autosave, .docx, .md and .txt import, and owner-controlled sharing. Try it with seeded demo accounts, no sign-up needed.";
@@ -17,31 +22,31 @@ export const metadata: Metadata = {
   openGraph: { title: "Ajaia Docs — write, import and share documents", description: DESCRIPTION },
 };
 
-const FEATURES: { Icon: LucideIcon; title: string; body: string; detail: string }[] = [
-  {
-    Icon: FileText,
-    title: "Write without a Save button",
-    body: "Headings, lists, bold, italic and underline. Every change saves a second after you stop typing.",
-    detail: "If someone else saved first, you're asked to reload or overwrite. Nothing is silently replaced.",
-  },
-  {
-    Icon: Upload,
-    title: "Import what you already have",
-    body: "Turn a .txt, .md or .docx file (up to 5 MB) into a new document you can keep editing.",
-    detail: "Headings, lists and emphasis come across. The original file isn't stored.",
-  },
-  {
-    Icon: Users,
-    title: "Share with one person at a time",
-    body: "The owner shares by email as Editor or Viewer, and can remove access at any time.",
-    detail: "Anyone else who opens the link gets Not found, even through the API.",
-  },
-];
-
 const ACCOUNTS = [
-  { name: "Alice", email: "alice@ajaia.test", role: "Owner", tone: "owner", note: "Owns Q4 Planning Notes and a private draft. Try sharing, renaming and deleting." },
-  { name: "Bob", email: "bob@ajaia.test", role: "Collaborator", tone: "shared", note: "Finds Alice's document under Shared with me and can edit it, but not share or delete it." },
-  { name: "Carol", email: "carol@ajaia.test", role: "Outsider", tone: "neutral", note: "Has no access. Paste one of Alice's document URLs and you'll see Not found." },
+  {
+    id: "alice",
+    name: "Alice",
+    email: "alice@ajaia.test",
+    role: "Owner",
+    badge: "bg-primary-soft text-primary",
+    tries: ["Format and rename Q4 Planning Notes", "Share a document with Bob", "Remove access, then delete"],
+  },
+  {
+    id: "bob",
+    name: "Bob",
+    email: "bob@ajaia.test",
+    role: "Collaborator",
+    badge: "bg-accent-soft text-accent-text",
+    tries: ["Find Alice's doc under Shared with me", "Edit it and watch it autosave", "Notice there's no Share or Delete"],
+  },
+  {
+    id: "carol",
+    name: "Carol",
+    email: "carol@ajaia.test",
+    role: "Outsider",
+    badge: "border border-line bg-canvas text-muted",
+    tries: ["Paste one of Alice's document URLs", "Get Not found, not Forbidden", "Same answer from the API"],
+  },
 ] as const;
 
 const FAQ: FaqItem[] = [
@@ -59,7 +64,7 @@ const FAQ: FaqItem[] = [
   },
   {
     q: "Do I need to create an account?",
-    a: "No. There's no sign-up. Use one of the three demo accounts (Alice, Bob or Carol), all with the password demo1234. The login page has a one-click button for each.",
+    a: "No. The quickest way in is one of the three demo accounts (Alice, Bob or Carol): one click on this page or the login page, password demo1234. If you'd rather test with your own name, you can create an account.",
   },
   {
     q: "Where is my data stored, and is the demo secure?",
@@ -67,23 +72,28 @@ const FAQ: FaqItem[] = [
   },
 ];
 
-function SectionCta({ href, children, external = false }: { href: string; children: ReactNode; external?: boolean }) {
-  const cls =
-    "mk-press group inline-flex h-10 items-center gap-1.5 rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors duration-150 hover:bg-canvas";
-  if (external) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
-        {children}
-        <ArrowUpRight aria-hidden className="h-4 w-4 text-muted" strokeWidth={1.75} />
-        <span className="sr-only">(opens in a new tab)</span>
-      </a>
-    );
-  }
+const btnPrimary =
+  "mk-press group inline-flex items-center gap-2 rounded-md bg-primary font-medium text-on-primary transition-colors duration-150 hover:bg-primary-hover";
+const btnSecondary =
+  "mk-press group inline-flex h-10 items-center gap-1.5 rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors duration-150 hover:bg-canvas";
+
+function SectionCta({ href, children, note, external = false }: { href: string; children: ReactNode; note?: string; external?: boolean }) {
   return (
-    <Link href={href} className={cls}>
-      {children}
-      <ArrowRight aria-hidden className="mk-nudge h-4 w-4 text-muted" strokeWidth={1.75} />
-    </Link>
+    <Reveal className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2">
+      {external ? (
+        <a href={href} target="_blank" rel="noopener noreferrer" className={btnSecondary}>
+          {children}
+          <ArrowUpRight aria-hidden className="h-4 w-4 text-muted" strokeWidth={1.75} />
+          <span className="sr-only">(opens in a new tab)</span>
+        </a>
+      ) : (
+        <Link href={href} className={btnSecondary}>
+          {children}
+          <ArrowRight aria-hidden className="mk-nudge h-4 w-4 text-muted" strokeWidth={1.75} />
+        </Link>
+      )}
+      {note && <span className="text-sm text-muted">{note}</span>}
+    </Reveal>
   );
 }
 
@@ -91,10 +101,10 @@ function SectionHeading({ id, kicker, title, children }: { id: string; kicker: s
   return (
     <Reveal className="max-w-2xl">
       <p className="text-sm font-medium text-primary">{kicker}</p>
-      <h2 id={id} className="mt-2 scroll-mt-24 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+      <h2 id={id} className="mt-2 scroll-mt-24 text-[28px] font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
         {title}
       </h2>
-      {children && <p className="mt-3 text-[15px] leading-relaxed text-muted sm:text-base">{children}</p>}
+      {children && <p className="mt-4 text-[15px] leading-relaxed text-muted sm:text-[17px]">{children}</p>}
     </Reveal>
   );
 }
@@ -103,122 +113,144 @@ export default function WelcomePage() {
   return (
     <>
       {/* Hero */}
-      <section aria-labelledby="hero-title" className="mx-auto max-w-[1120px] px-4 pb-16 pt-28 sm:px-6 sm:pt-36 lg:pb-24">
-        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
-          <div>
-            <p className="mk-fade-up inline-flex items-center gap-2 text-sm text-muted">
-              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
-              Live demo · no sign-up
-            </p>
-            <h1 id="hero-title" className="mt-4 text-[34px] font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl">
-              <WordReveal text="Write it, import it, hand it to a teammate." startDelay={80} />
-            </h1>
-            <p className="mk-fade-up mt-5 max-w-lg text-base leading-relaxed text-muted sm:text-lg" style={{ animationDelay: "380ms" }}>
-              A focused document editor with autosave, .docx, .md and .txt import, and owner-controlled sharing.
-            </p>
-            <div className="mk-fade-up mt-8 flex flex-wrap items-center gap-3" style={{ animationDelay: "480ms" }}>
-              <Magnetic>
+      <section aria-labelledby="hero-title" className="relative overflow-hidden">
+        <div aria-hidden className="mk-grid pointer-events-none absolute inset-0" />
+        <div className="relative mx-auto max-w-[1120px] px-4 pb-20 pt-28 sm:px-6 sm:pt-36 lg:pb-28">
+          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-12">
+            <div>
+              <p className="mk-fade-up inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[13px] text-muted">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Live demo · one-click demo accounts
+              </p>
+              <h1 id="hero-title" className="mt-5 text-[38px] font-semibold leading-[1.06] tracking-[-0.02em] text-ink sm:text-[56px]">
+                <WordReveal text="Write it, import it, hand it to a teammate." startDelay={80} emphasis="teammate" />
+              </h1>
+              <p className="mk-fade-up mt-6 max-w-lg text-base leading-relaxed text-muted sm:text-lg" style={{ animationDelay: "420ms" }}>
+                A focused document editor with autosave, .docx, .md and .txt import, and owner-controlled sharing.
+              </p>
+              <div className="mk-fade-up mt-9 flex flex-wrap items-center gap-3" style={{ animationDelay: "520ms" }}>
+                <Magnetic>
+                  <Link href="/login" className={`${btnPrimary} h-12 px-6 text-[15px]`}>
+                    Try the live demo
+                    <ArrowRight aria-hidden className="mk-nudge h-4 w-4" strokeWidth={1.75} />
+                  </Link>
+                </Magnetic>
                 <Link
-                  href="/login"
-                  className="mk-press group inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 text-[15px] font-medium text-on-primary transition-colors duration-150 hover:bg-primary-hover"
+                  href="/register"
+                  className="mk-press inline-flex h-12 items-center gap-2 rounded-md border border-line bg-surface px-5 text-[15px] font-medium text-ink transition-colors duration-150 hover:bg-canvas"
                 >
-                  Try the live demo
-                  <ArrowRight aria-hidden className="mk-nudge h-4 w-4" strokeWidth={1.75} />
+                  <UserPlus aria-hidden className="h-4 w-4 text-muted" strokeWidth={1.75} />
+                  Create an account
                 </Link>
-              </Magnetic>
-              <a
-                href="#accounts"
-                className="mk-press inline-flex h-11 items-center rounded-md border border-line bg-surface px-5 text-[15px] font-medium text-ink transition-colors duration-150 hover:bg-canvas"
-              >
-                See the demo accounts
-              </a>
+              </div>
+              <p className="mk-fade-up mt-5 inline-flex items-center gap-1.5 text-sm text-muted" style={{ animationDelay: "600ms" }}>
+                <KeyRound aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+                Password for every demo account: <code className="font-mono text-ink">demo1234</code>
+              </p>
             </div>
-            <p className="mk-fade-up mt-4 inline-flex items-center gap-1.5 text-sm text-muted" style={{ animationDelay: "560ms" }}>
-              <KeyRound aria-hidden className="h-4 w-4" strokeWidth={1.75} />
-              Three seeded accounts, password <code className="font-mono text-ink">demo1234</code>
-            </p>
+            <div className="mk-fade-up pb-6 lg:pb-0" style={{ animationDelay: "240ms" }}>
+              <LiveEditorDemo />
+            </div>
           </div>
-          <div className="mk-fade-up" style={{ animationDelay: "260ms" }}>
-            <EditorMock />
+        </div>
+      </section>
+
+      {/* Formats marquee */}
+      <section aria-label="What an import keeps" className="border-y border-line bg-canvas py-5">
+        <div className="mx-auto flex max-w-[1120px] flex-col gap-3 px-4 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
+          <p className="shrink-0 text-sm font-medium text-muted">Import keeps</p>
+          <div className="min-w-0 flex-1">
+            <FormatMarquee />
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section aria-labelledby="features" className="border-t border-line bg-surface">
-        <div className="mx-auto max-w-[1120px] px-4 py-16 sm:px-6 sm:py-24">
-          <SectionHeading id="features" kicker="What you can do" title="Three things, done properly">
+      <section aria-labelledby="features" className="bg-surface">
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6 sm:py-28">
+          <SectionHeading id="features" kicker="What you can do" title="The essentials, done properly.">
             Editing, importing and sharing, with the details that stop work from getting lost. Everything else was cut on
-            purpose.
+            purpose. Hover a card to replay it.
           </SectionHeading>
-          <ul className="mt-10 grid gap-4 md:grid-cols-3">
-            {FEATURES.map(({ Icon, title, body, detail }, i) => (
-              <Reveal as="li" key={title} delay={i * 60} className="h-full">
-                <div className="mk-card group h-full rounded-lg border border-line bg-canvas p-5">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary-soft text-primary">
-                    <Icon aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.75} />
-                  </span>
-                  <h3 className="mt-4 text-[17px] font-semibold text-ink">{title}</h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-ink/90">{body}</p>
-                  <p className="mt-3 border-t border-line pt-3 text-sm leading-relaxed text-muted">{detail}</p>
-                </div>
-              </Reveal>
-            ))}
-          </ul>
-          <Reveal className="mt-10 flex flex-wrap items-center gap-3">
-            <SectionCta href="/login">Import a file</SectionCta>
-            <span className="text-sm text-muted">Log in, then choose Import file on the dashboard.</span>
-          </Reveal>
+          <div className="mt-12">
+            <Bento />
+          </div>
+          <SectionCta href="/login" note="Log in, then choose Import file on the dashboard.">
+            Import a file
+          </SectionCta>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section aria-labelledby="how" className="border-t border-line">
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6 sm:py-28">
+          <SectionHeading id="how" kicker="How it works" title="From blank page to shared, and back.">
+            Four steps cover the whole product. Scroll through them.
+          </SectionHeading>
+          <div className="mt-8 lg:mt-4">
+            <HowItWorks />
+          </div>
+          <SectionCta href="/login" note="Takes about two minutes with the demo accounts.">
+            Try the live demo
+          </SectionCta>
+        </div>
+      </section>
+
+      {/* Trust */}
+      <section aria-labelledby="trust" className="border-t border-line bg-surface">
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6 sm:py-28">
+          <SectionHeading id="trust" kicker="Built to be trusted" title="The boring parts, done carefully.">
+            Every number below comes straight from the codebase. The security notes explain each decision.
+          </SectionHeading>
+          <div className="mt-12">
+            <TrustStrip />
+          </div>
+          <SectionCta href={`${DOCS_URL}/SECURITY-ESSENTIALS.md`} external>
+            Read the security notes
+          </SectionCta>
         </div>
       </section>
 
       {/* Demo accounts */}
       <section aria-labelledby="accounts" className="border-t border-line">
-        <div className="mx-auto max-w-[1120px] px-4 py-16 sm:px-6 sm:py-24">
-          <SectionHeading id="accounts" kicker="Demo accounts" title="Log in as someone, then switch">
-            Each account shows a different side of sharing. All three use the password{" "}
-            <code className="font-mono text-ink">demo1234</code>, and the login page has a one-click button for each.
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6 sm:py-28">
+          <SectionHeading id="accounts" kicker="Demo accounts" title="Log in as someone, then switch.">
+            Each account shows a different side of sharing. One click signs you in and opens the dashboard. Prefer
+            typing? The password is <code className="font-mono text-ink">demo1234</code>.
           </SectionHeading>
-          <ul className="mt-10 grid gap-4 md:grid-cols-3">
+          <ul className="mt-12 grid gap-4 md:grid-cols-3">
             {ACCOUNTS.map((a, i) => (
-              <Reveal as="li" key={a.name} delay={i * 60} className="h-full">
-                <div className="mk-card flex h-full flex-col rounded-lg border border-line bg-surface p-5">
-                  <div className="flex items-center gap-3">
-                    <span
-                      aria-hidden
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary"
-                    >
-                      {a.name[0]}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-                        {a.name}
-                        <span
-                          className={
-                            "rounded-full px-2 py-0.5 text-xs font-semibold " +
-                            (a.tone === "owner"
-                              ? "bg-primary-soft text-primary"
-                              : a.tone === "shared"
-                                ? "bg-accent-soft text-accent-text"
-                                : "border border-line bg-canvas text-muted")
-                          }
-                        >
-                          {a.role}
-                        </span>
-                      </p>
-                      <p className="truncate text-sm text-muted">{a.email}</p>
+              <li key={a.id}>
+                <Reveal delay={i * 60} className="h-full">
+                  <div className="mk-card mk-account flex h-full flex-col rounded-lg border border-line bg-surface p-5 sm:p-6">
+                    <div className="flex items-center gap-3">
+                      <span
+                        aria-hidden
+                        className="mk-account-avatar inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-base font-semibold text-primary"
+                      >
+                        {a.name[0]}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-2 text-[16px] font-semibold text-ink">
+                          {a.name}
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${a.badge}`}>{a.role}</span>
+                        </p>
+                        <p className="truncate text-sm text-muted">{a.email}</p>
+                      </div>
                     </div>
+                    <p className="mt-5 text-xs font-medium uppercase tracking-wide text-muted">Try this</p>
+                    <ul className="mt-2 flex-1 space-y-2">
+                      {a.tries.map((t) => (
+                        <li key={t} className="mk-try flex items-start gap-2 text-[15px] leading-snug text-muted">
+                          <CircleCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
+                    <QuickLoginButton id={a.id} name={a.name} />
                   </div>
-                  <p className="mt-4 flex-1 text-[15px] leading-relaxed text-ink/90">{a.note}</p>
-                  <Link
-                    href="/login"
-                    className="mk-press group mt-5 inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-line bg-canvas px-4 text-sm font-medium text-ink transition-colors duration-150 hover:border-primary hover:text-primary"
-                  >
-                    <LogIn aria-hidden className="h-4 w-4" strokeWidth={1.75} />
-                    Log in as {a.name}
-                  </Link>
-                </div>
-              </Reveal>
+                </Reveal>
+              </li>
             ))}
           </ul>
         </div>
@@ -226,16 +258,14 @@ export default function WelcomePage() {
 
       {/* FAQ */}
       <section aria-labelledby="faq" className="border-t border-line bg-surface">
-        <div className="mx-auto grid max-w-[1120px] gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+        <div className="mx-auto grid max-w-[1120px] gap-10 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
           <div>
-            <SectionHeading id="faq" kicker="FAQ" title="Questions a reviewer usually asks">
+            <SectionHeading id="faq" kicker="FAQ" title="Questions a reviewer usually asks.">
               Short, honest answers. The architecture notes on GitHub go deeper.
             </SectionHeading>
-            <Reveal className="mt-8">
-              <SectionCta href={`${DOCS_URL}/ARCHITECTURE.md`} external>
-                Read the architecture
-              </SectionCta>
-            </Reveal>
+            <SectionCta href={`${DOCS_URL}/ARCHITECTURE.md`} external>
+              Read the architecture
+            </SectionCta>
           </div>
           <Reveal>
             <Faq items={FAQ} />
@@ -245,25 +275,35 @@ export default function WelcomePage() {
 
       {/* Final CTA */}
       <section aria-labelledby="cta-title" className="border-t border-line">
-        <div className="mx-auto max-w-[1120px] px-4 py-16 sm:px-6 sm:py-20">
-          <Reveal className="flex flex-col items-start justify-between gap-6 rounded-lg bg-primary p-6 text-on-primary sm:p-10 md:flex-row md:items-center">
-            <div>
-              <h2 id="cta-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                See it working in two minutes.
-              </h2>
-              <p className="mt-2 max-w-xl text-[15px] opacity-90 sm:text-base">
-                Log in as Alice, share a document with Bob, then try opening it as Carol.
-              </p>
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6 sm:py-24">
+          <Reveal>
+            <div className="mk-sweep flex flex-col items-start justify-between gap-8 rounded-lg bg-primary p-7 text-on-primary sm:p-12 md:flex-row md:items-center">
+              <div>
+                <h2 id="cta-title" className="text-[28px] font-semibold leading-tight tracking-tight sm:text-4xl">
+                  See it working in two minutes.
+                </h2>
+                <p className="mt-3 max-w-xl text-[15px] opacity-90 sm:text-[17px]">
+                  Log in as Alice, share a document with Bob, then try opening it as Carol.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Magnetic>
+                  <Link
+                    href="/login"
+                    className="mk-press group inline-flex h-14 items-center gap-2 rounded-md bg-surface px-7 text-base font-semibold text-ink transition-colors duration-150 hover:bg-canvas"
+                  >
+                    Try the live demo
+                    <ArrowRight aria-hidden className="mk-nudge h-5 w-5" strokeWidth={1.75} />
+                  </Link>
+                </Magnetic>
+                <Link
+                  href="/register"
+                  className="mk-press inline-flex h-14 items-center rounded-md border border-on-primary/40 px-6 text-base font-medium text-on-primary transition-colors duration-150 hover:bg-on-primary/10"
+                >
+                  Create an account
+                </Link>
+              </div>
             </div>
-            <Magnetic>
-              <Link
-                href="/login"
-                className="mk-press group inline-flex h-11 items-center gap-2 rounded-md bg-surface px-5 text-[15px] font-medium text-ink transition-colors duration-150 hover:bg-canvas"
-              >
-                Try the live demo
-                <ArrowRight aria-hidden className="mk-nudge h-4 w-4" strokeWidth={1.75} />
-              </Link>
-            </Magnetic>
           </Reveal>
         </div>
       </section>

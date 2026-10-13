@@ -31,11 +31,12 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          There is no sign-up. Three demo accounts (Alice, Bob and Carol) are created when the database is seeded, and
-          their password, <code>demo1234</code>, is published on the login page.
+          Three demo accounts (Alice, Bob and Carol) are created when the database is seeded, and their password,{" "}
+          <code>demo1234</code>, is published on the login page. You can also create your own account.
         </p>
         <ul>
-          <li>Anyone can log in as any demo account, so treat everything you write as visible to other visitors.</li>
+          <li>Anyone can log in as any demo account, so treat everything you write there as visible to other visitors.</li>
+          <li>Accounts you create yourself may be deleted when the demo is reset.</li>
           <li>Don&apos;t store personal, confidential or sensitive information in the demo.</li>
         </ul>
       </>

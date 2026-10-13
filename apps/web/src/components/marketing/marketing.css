@@ -198,3 +198,148 @@ html.lenis body {
     transform: none;
   }
 }
+
+/* ---------- Landing upgrade ---------- */
+
+/* Faint dotted paper grid; fades out at the edges. */
+.mk-grid {
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 11%, transparent) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 85%);
+}
+.mk-dots {
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1.4px);
+  background-size: 16px 16px;
+}
+
+/* Light tokens inside a dark page (theme vignette). */
+.mk-light-scope {
+  --canvas: #f6f4ef;
+  --surface: #ffffff;
+  --ink: #1c1f23;
+  --muted: #5b616b;
+  --line: #e3dfd6;
+  --primary: #2e5e4e;
+  --on-primary: #ffffff;
+  --primary-soft: #e6efea;
+  --accent-text: #a94e27;
+  --accent-soft: #fbede6;
+  color-scheme: light;
+}
+
+/* Blinking text caret. */
+@keyframes mk-blink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+}
+.mk-caret {
+  animation: mk-blink 1s step-end infinite;
+}
+
+/* Underline stroke that draws in under a headline word. */
+@keyframes mk-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.mk-underline path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: mk-draw 700ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/* Formats marquee. */
+@keyframes mk-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.mk-marquee {
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.mk-marquee-track {
+  animation: mk-marquee 48s linear infinite;
+}
+.mk-marquee:hover .mk-marquee-track,
+.mk-marquee:focus-within .mk-marquee-track {
+  animation-play-state: paused;
+}
+
+/* CTA band: a short highlight that travels along the top and bottom edges. */
+@keyframes mk-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(400%); }
+}
+.mk-sweep {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.mk-sweep::before,
+.mk-sweep::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 25%;
+  height: 1px;
+  background: color-mix(in srgb, var(--on-primary) 55%, transparent);
+  animation: mk-sweep 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+.mk-sweep::before {
+  top: 0;
+}
+.mk-sweep::after {
+  bottom: 0;
+  animation-delay: 2.5s;
+}
+
+/* Account cards: lift, avatar ring and checklist tick on hover/focus. */
+.mk-account .mk-account-avatar {
+  transition: box-shadow 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+.mk-account:hover .mk-account-avatar,
+.mk-account:focus-within .mk-account-avatar {
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px var(--primary);
+}
+.mk-account .mk-try {
+  transition: color 150ms cubic-bezier(0.2, 0, 0, 1), transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+.mk-account:hover .mk-try,
+.mk-account:focus-within .mk-try {
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .mk-account:hover .mk-try {
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-caret,
+  .mk-underline path,
+  .mk-sweep::before,
+  .mk-sweep::after {
+    animation: none;
+  }
+  .mk-sweep::before,
+  .mk-sweep::after {
+    display: none;
+  }
+  .mk-marquee {
+    mask-image: none;
+  }
+  .mk-marquee-track {
+    animation: none;
+    width: auto;
+    flex-wrap: wrap;
+  }
+  .mk-marquee-track > ul + ul {
+    display: none;
+  }
+  .mk-marquee-track > ul {
+    flex-wrap: wrap;
+    row-gap: 0.75rem;
+  }
+  .mk-account:hover .mk-try {
+    transform: none;
+  }
+}
