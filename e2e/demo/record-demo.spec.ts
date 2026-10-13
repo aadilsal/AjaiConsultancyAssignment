@@ -52,14 +52,19 @@ async function card(page: Page, html: string, ms: number) {
   await page.evaluate(() => (window as unknown as { __demoCard: (x: string) => void }).__demoCard(''));
 }
 
+async function go(page: Page, url: string) {
+  try { await page.goto(url); } catch { await page.waitForTimeout(1500); await page.goto(url).catch(() => {}); }
+}
+
 async function loginAs(page: Page, who: 'Alice' | 'Bob' | 'Carol') {
-  await page.goto('/login');
+  await go(page, '/login');
   await page.getByRole('button', { name: `Log in as ${who}` }).click();
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
   await expect(page.getByRole('heading', { name: 'My documents' })).toBeVisible();
 }
 
 async function logout(page: Page) {
+  if (page.url().includes("/docs/")) await go(page, "/");
   const direct = page.getByRole('button', { name: 'Log out' });
   if (!(await direct.isVisible().catch(() => false))) {
     await page.getByRole('button', { name: /account|user menu|open menu/i }).first().click();
@@ -74,7 +79,7 @@ async function waitSaved(page: Page) {
 
 async function dismissModal(page: Page, button = 'OK') {
   const dialog = page.getByRole('alertdialog');
-  if (await dialog.isVisible().catch(() => false)) await dialog.getByRole('button', { name: button }).click();
+  await dialog.getByRole('button', { name: button }).click({ timeout: 4000 }).catch(() => {});
 }
 
 test('Ajaia Docs walkthrough', async ({ page }) => {
@@ -84,7 +89,7 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   const F = (n: number, name: string) => `Flow ${n} of 6 · ${name}`;
 
   // Intro card.
-  await page.goto('/welcome');
+  await go(page, '/welcome');
   await card(page, '<h1>Ajaia Docs</h1><p>A focused document editor: rich text with autosave, .docx/.md/.txt import, and owner-controlled sharing.</p><p style="opacity:.6;font-size:18px">Demo accounts — Alice (owner) · Bob (collaborator) · Carol (outsider) · password demo1234</p>', 5000);
 
   // Landing page and one-click demo login.
@@ -139,7 +144,7 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   await pause(page, 800);
   await page.getByRole('dialog').getByRole('button', { name: 'Import', exact: true }).click();
   const openBtn = page.getByRole('alertdialog').getByRole('button', { name: 'Open document' });
-  if (await openBtn.isVisible({ timeout: 8000 }).catch(() => false)) await openBtn.click();
+  try { await openBtn.click({ timeout: 15000 }); } catch { await go(page, "/"); await page.getByRole("link", { name: /product-brief/ }).first().click(); }
   await page.waitForURL(/\/docs\//);
   await expect(body.locator('h1')).toBeVisible();
   await caption(page, F(2, 'Import'), 'product-brief.docx → headings, bullet + numbered lists, bold, italic and underline preserved', 2500);
@@ -147,7 +152,7 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   await pause(page, 2500);
 
   // Flow 3 — share.
-  await page.goto(docUrl);
+  await go(page, docUrl);
   await caption(page, F(3, 'Share'), 'Only the owner sees the Share button. Alice shares the doc with Bob by email', 1500);
   await page.getByRole('button', { name: 'Share', exact: true }).click();
   const share = page.getByRole('dialog', { name: 'Share document' });
@@ -173,7 +178,7 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   await pause(page, 1500);
   await logout(page);
   await loginAs(page, 'Alice');
-  await page.goto(docUrl);
+  await go(page, docUrl);
   await expect(body).toContainText('Bob: I will test the import path today.');
   await caption(page, F(4, 'Receive'), 'Back as Alice: Bob’s change is there when she reopens the doc', 3000);
 
@@ -181,18 +186,18 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   await caption(page, F(5, 'Deny'), 'Carol was never given access. She pastes the same document URL…', 1500);
   await logout(page);
   await loginAs(page, 'Carol');
-  await page.goto(docUrl);
+  await go(page, docUrl);
   await expect(page.getByText("This document doesn't exist or you don't have access.")).toBeVisible();
   await caption(page, F(5, 'Deny'), '…and gets “Not found” — 404, not 403, so document IDs can’t be probed', 3500);
-  await page.goto(docUrl.replace('/docs/', '/api/documents/'));
+  await go(page, docUrl.replace('/docs/', '/api/documents/'));
   await caption(page, F(5, 'Deny'), 'Calling the API directly gives the same 404 — access is enforced on the server', 3500);
 
   // Flow 6 — revoke.
-  await page.goto('/');
+  await go(page, '/');
   await caption(page, F(6, 'Revoke'), 'Alice removes Bob’s access', 1000);
   await logout(page);
   await loginAs(page, 'Alice');
-  await page.goto(docUrl);
+  await go(page, docUrl);
   await page.getByRole('button', { name: 'Share', exact: true }).click();
   await page.getByRole('button', { name: /Remove Bob/ }).click();
   await dismissModal(page);
@@ -202,11 +207,11 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   await loginAs(page, 'Bob');
   await expect(page.getByRole('link', { name: title })).toHaveCount(0);
   await caption(page, F(6, 'Revoke'), 'Bob’s next visit: the document is gone from his list', 3000);
-  await page.goto(docUrl);
+  await go(page, docUrl);
   await caption(page, F(6, 'Revoke'), 'and its URL now returns Not found for him too', 2500);
 
   // Extras.
-  await page.goto('/');
+  await go(page, '/');
   const toggle = page.getByRole('button', { name: /^Theme/ });
   if (await toggle.isVisible().catch(() => false)) {
     await caption(page, 'Extras', 'Light / dark theme (follows the system by default)', 600);
@@ -215,7 +220,7 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
     await toggle.click();
     await pause(page, 1800);
   }
-  await page.goto('/api/docs');
+  await go(page, '/api/docs');
   await caption(page, 'Extras', 'Every endpoint is documented in OpenAPI / Swagger at /api/docs', 3500);
 
   // Closing card.
