@@ -13,8 +13,24 @@ colors:
   primary-soft: "#E6EFEA"
   accent: "#B4532A"
   accent-soft: "#FBEDE6"
+  accent-text: "#A94E27"
   danger: "#B42318"
   warning: "#A15C07"
+colors-dark:
+  canvas: "#15171A"
+  surface: "#1E2125"
+  on-surface: "#E8E6E1"
+  muted: "#A3A9B2"
+  line: "#2E3238"
+  primary: "#7FB89F"
+  primary-hover: "#95C7B0"
+  on-primary: "#10241C"
+  primary-soft: "#1F3029"
+  accent: "#E08A62"
+  accent-soft: "#3A251B"
+  accent-text: "#E08A62"
+  danger: "#F0857A"
+  warning: "#E2A65A"
 typography:
   label-md:
     fontFamily: Inter
@@ -88,7 +104,7 @@ components:
     padding: 2px 8px
   badge-shared:
     backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.accent}"
+    textColor: "{colors.accent-text}"
     typography: "{typography.label-md}"
     rounded: "{rounded.full}"
     padding: 2px 8px
@@ -190,9 +206,35 @@ The app chrome is set in Inter: small, neutral, out of the way. The document is 
 | `danger` on `surface` | 6.57:1 | Pass |
 | `warning` on `surface` / `canvas` | 5.19 / 4.72:1 | Pass |
 | `accent` on `surface` | 4.99:1 | Pass |
-| **`accent` on `accent-soft` (shared badge)** | **4.36:1** | **Fails by 0.14** |
+| `accent` on `accent-soft` | 4.36:1 | Fails — not used for text |
+| `accent-text` on `accent-soft` (shared badge) | 4.82:1 | Pass |
 
-The shared badge is the one failing pair. Fix: render badge text in a darker rust, `#A94E27` (4.82:1 on `accent-soft`, 5.52:1 on `surface`), and keep `accent` #B4532A for icons and borders. Until that lands, the badge must use weight 600 so it stays legible.
+Badge text uses `accent-text` (#A94E27); `accent` (#B4532A) is for icons and borders only.
+
+### Dark theme
+
+The app follows the OS setting (`prefers-color-scheme`) by default; a header toggle cycles **System → Light → Dark** and the choice is remembered (`next-themes`, class on `<html>`, no flash on load). Every colour is a CSS variable, so components never branch on theme.
+
+| Token | Light | Dark | Note |
+|---|---|---|---|
+| `canvas` | #F6F4EF | #15171A | The desk at night |
+| `surface` | #FFFFFF | #1E2125 | Page, dialogs, inputs |
+| `on-surface` | #1C1F23 | #E8E6E1 | Warm off-white, not pure white |
+| `muted` | #5B616B | #A3A9B2 | |
+| `line` | #E3DFD6 | #2E3238 | |
+| `primary` | #2E5E4E | #7FB89F | Green lifts for contrast on dark |
+| `on-primary` | #FFFFFF | #10241C | Text on primary buttons |
+| `primary-soft` | #E6EFEA | #1F3029 | |
+| `accent` / `accent-text` | #B4532A / #A94E27 | #E08A62 | |
+| `accent-soft` | #FBEDE6 | #3A251B | |
+| `danger` | #B42318 | #F0857A | |
+| `warning` | #A15C07 | #E2A65A | |
+
+Measured (dark), all pass AA: `on-surface`/`canvas` 14.40, `muted`/`surface` 6.83, `primary`/`surface` 7.13, `on-primary`/`primary` 7.17, `primary`/`primary-soft` 6.12, `accent`/`accent-soft` 5.47, `danger`/`surface` 6.42, `warning`/`surface` 7.57.
+
+Dark rules: no pure black or pure white; page shadow becomes `0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35)`; `color-scheme: dark` so native controls and scrollbars match.
+
+**Theme switch animation:** a circular reveal expanding from the toggle (View Transitions API, ~400ms ease-out). Browsers without it get a 200ms colour crossfade. With `prefers-reduced-motion: reduce` the switch is instant. The toggle icon (Monitor / Sun / Moon) swaps with a 180ms rotate + fade.
 
 ## Typography
 
@@ -258,7 +300,8 @@ Nested radii shrink inward. Never put an `md` element flush inside an `sm` conta
 | `conflict-banner` | `canvas` fill, `warning` text (4.72:1), `body-md` | 409 only: "This document changed elsewhere" with Reload latest / Overwrite |
 | `divider` | 1px `line` | Between rows and dashboard sections |
 | `badge-owner` | `primary-soft` / `primary`, text "Owner" | Static |
-| `badge-shared` | `accent-soft` / `accent` (see the contrast fix), text "Shared by {name}" | Static |
+| `badge-shared` | `accent-soft` / `accent-text`, text "Shared by {name}" | Static |
+| `theme-toggle` | 32px icon button, Monitor / Sun / Moon, name "Theme: {current}" | Cycles System → Light → Dark; icon swap animated |
 | `toolbar-button-active` | 32px square, `primary-soft` / `primary`, `sm` radius | Inactive → transparent with `on-surface` icon; `aria-pressed` mirrors active state |
 | `page` | `surface`, 1px `line`, `lg` radius, 816px, 64px 72px padding, `doc-*` type | Read-only (viewer) → toolbar hidden, caret hidden |
 | `input` | 40px, `line` border, `md` radius, `body-md` | Focus → `primary` border + ring; error → `danger` border + inline message below |
@@ -288,7 +331,8 @@ Icons come from `lucide-react`: 16px in buttons, 18px in the toolbar, stroke 1.7
 
 - **Do** keep one primary (green) action per surface: "New document" on the dashboard, "Share" in the editor, the submit button in a dialog.
 - **Do** show the save status in the editor at all times. It is never hidden, never a toast.
-- **Do** keep text at 4.5:1 or better. Measured: `primary` on `surface` 7.43, `muted` on `canvas` 5.67, `accent` on `accent-soft` 4.36 (fails; use `#A94E27` for badge text).
+- **Do** keep text at 4.5:1 or better in both themes. Measured (light): `primary` on `surface` 7.43, `muted` on `canvas` 5.67, `accent-text` on `accent-soft` 4.82.
+- **Do** design every surface in light and dark; use tokens, never raw hex in components.
 - **Do** use rust (`accent`) only for "shared" marks.
 - **Do** keep keyboard parity: every toolbar action has a shortcut and a visible focus ring.
 - **Don't** use gradients, emoji, glassmorphism or drop shadows on the page.
