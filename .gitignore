@@ -30,3 +30,6 @@ Thumbs.db
 playwright-report/
 test-results/
 blob-report/
+
+# submission artefacts stay local
+*.zip
