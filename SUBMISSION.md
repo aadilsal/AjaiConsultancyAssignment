@@ -10,7 +10,7 @@
 | **Live app** | **https://docs.51-170-90-86.sslip.io** |
 | API docs (Swagger UI) | https://docs.51-170-90-86.sslip.io/api/docs |
 | Source code | https://github.com/aadilsal/AjaiConsultancyAssignment |
-| Walkthrough video | `ajaia-docs-walkthrough.mp4` in the Google Drive folder above (also listed in `VIDEO_URL.txt`) |
+| Walkthrough video | https://drive.google.com/file/d/1yEUpfQadboPnjL6GfqSyqk_g-NGBVKVD/view?usp=sharing (also in `VIDEO_URL.txt`) |
 
 ## Accounts for reviewing sharing
 
