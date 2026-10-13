@@ -1,6 +1,7 @@
 # Keep the build context small and secret-free.
 node_modules
 .next
+.next-*
 out
 coverage
 .env
