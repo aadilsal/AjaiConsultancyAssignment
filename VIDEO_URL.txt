@@ -1,7 +1,7 @@
 Ajaia Docs — walkthrough video (under 4 minutes, on-screen captions)
 
 Video:          <LOOM_OR_YOUTUBE_LINK>
-Google Drive:   <DRIVE_FOLDER_LINK>
+Google Drive:   https://drive.google.com/drive/folders/1cOjWThNjE1SjLkQMbp5jC3bRdjEMPveG?usp=sharing
 
 Live app:       https://docs.51-170-90-86.sslip.io
 Source code:    https://github.com/aadilsal/AjaiConsultancyAssignment

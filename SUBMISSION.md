@@ -6,7 +6,7 @@
 
 | What | Where |
 |---|---|
-| Google Drive folder (all materials) | `<DRIVE_FOLDER_LINK>` |
+| Google Drive folder (all materials) | https://drive.google.com/drive/folders/1cOjWThNjE1SjLkQMbp5jC3bRdjEMPveG?usp=sharing |
 | **Live app** | **https://docs.51-170-90-86.sslip.io** |
 | API docs (Swagger UI) | https://docs.51-170-90-86.sslip.io/api/docs |
 | Source code | https://github.com/aadilsal/AjaiConsultancyAssignment |
