@@ -49,7 +49,7 @@ describe('Auth (e2e)', () => {
       .set('X-Forwarded-For', randomIp())
       .send({ email: alice.email, password: 'nope' })
       .expect(401);
-    expect(res.body).toEqual({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect email or password' } });
+    expect(res.body).toMatchObject({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect email or password' } });
   });
 
   it('unknown email -> same 401 INVALID_CREDENTIALS', async () => {
@@ -58,7 +58,7 @@ describe('Auth (e2e)', () => {
       .set('X-Forwarded-For', randomIp())
       .send({ email: 'ghost@test.local', password: PASSWORD })
       .expect(401);
-    expect(res.body).toEqual({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect email or password' } });
+    expect(res.body).toMatchObject({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect email or password' } });
   });
 
   it('invalid login body -> 400 VALIDATION_ERROR with details', async () => {

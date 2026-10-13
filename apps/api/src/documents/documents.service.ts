@@ -7,6 +7,33 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DocDetailDto, DocListDto, DocSavedDto, DocSummaryDto, UpdateDocumentDto } from './documents.dto';
 
 export const MAX_CONTENT_BYTES = 1024 * 1024;
+export const DEFAULT_PAGE_SIZE = 50;
+
+interface CursorPos {
+  list: 'owned' | 'shared';
+  updatedAt: Date;
+  id: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function encodeCursor(list: CursorPos['list'], doc: { updatedAt: Date; id: string }): string {
+  return Buffer.from(JSON.stringify({ l: list, u: doc.updatedAt.toISOString(), i: doc.id })).toString('base64url');
+}
+
+// Opaque cursor -> position; anything malformed is a 400.
+function decodeCursor(cursor: string): CursorPos {
+  try {
+    const raw = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { l?: unknown; u?: unknown; i?: unknown };
+    const updatedAt = new Date(String(raw.u));
+    if ((raw.l === 'owned' || raw.l === 'shared') && !isNaN(updatedAt.getTime()) && UUID_RE.test(String(raw.i))) {
+      return { list: raw.l, updatedAt, id: String(raw.i) };
+    }
+  } catch {
+    // fall through
+  }
+  throw new AppError(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'Invalid cursor', { details: ['Invalid cursor'] });
+}
 
 const ownerSelect = { select: { id: true, name: true, email: true } } as const;
 
@@ -27,22 +54,43 @@ export class DocumentsService {
     private readonly access: AccessService,
   ) {}
 
-  async list(userId: string): Promise<DocListDto> {
+  // Keyset pagination on (updatedAt desc, id desc); a cursor pages only its own list.
+  async list(userId: string, limit = DEFAULT_PAGE_SIZE, cursor?: string): Promise<DocListDto> {
+    const pos = cursor ? decodeCursor(cursor) : undefined;
+    const wantOwned = !pos || pos.list === 'owned';
+    const wantShared = !pos || pos.list === 'shared';
+    const after = (p?: CursorPos): Prisma.DocumentWhereInput =>
+      p ? { OR: [{ updatedAt: { lt: p.updatedAt } }, { updatedAt: p.updatedAt, id: { lt: p.id } }] } : {};
+
     const [owned, shares] = await Promise.all([
-      this.prisma.document.findMany({
-        where: { ownerId: userId },
-        include: { owner: ownerSelect },
-        orderBy: { updatedAt: 'desc' },
-      }),
-      this.prisma.documentShare.findMany({
-        where: { userId },
-        include: { document: { include: { owner: ownerSelect } } },
-        orderBy: { document: { updatedAt: 'desc' } },
-      }),
+      wantOwned
+        ? this.prisma.document.findMany({
+            where: { ownerId: userId, ...after(pos) },
+            include: { owner: ownerSelect },
+            orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+            take: limit + 1,
+          })
+        : [],
+      wantShared
+        ? this.prisma.documentShare.findMany({
+            where: { userId, document: after(pos) },
+            include: { document: { include: { owner: ownerSelect } } },
+            orderBy: [{ document: { updatedAt: 'desc' } }, { documentId: 'desc' }],
+            take: limit + 1,
+          })
+        : [],
     ]);
+
+    const ownedPage = owned.slice(0, limit);
+    const sharedPage = shares.slice(0, limit);
+    const last = <T>(arr: T[]): T => arr[arr.length - 1];
     return {
-      owned: owned.map((d) => toSummary(d, 'owner')),
-      shared: shares.map((s) => toSummary(s.document, s.role)),
+      owned: ownedPage.map((d) => toSummary(d, 'owner')),
+      shared: sharedPage.map((s) => toSummary(s.document, s.role)),
+      nextCursor: {
+        owned: owned.length > limit ? encodeCursor('owned', last(ownedPage)) : null,
+        shared: shares.length > limit ? encodeCursor('shared', last(sharedPage).document) : null,
+      },
     };
   }
 

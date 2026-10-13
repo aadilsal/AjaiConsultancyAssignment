@@ -1,7 +1,8 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { AppError } from '../app-error';
+import type { AppRequest } from '../http';
 
 const GENERIC_500 = 'Something went wrong. Please try again.';
 
@@ -22,17 +23,26 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<Request>();
+    const req = ctx.getRequest<AppRequest>();
     const { status, body } = this.toEnvelope(exception);
 
-    if (status >= 500) {
-      const docId = (req.params as Record<string, string> | undefined)?.id ?? '-';
-      this.logger.error(
-        `${req.method} ${req.originalUrl} doc=${docId} -> ${status}`,
-        exception instanceof Error ? exception.stack : String(exception),
-      );
+    if (status >= 500) this.logServerError(req, status, exception);
+    if (res.headersSent) return;
+    res.status(status).json({ error: { ...body, requestId: req.id } });
+  }
+
+  // 5xx: method, route, doc id, request id and stack. No bodies or cookies.
+  private logServerError(req: AppRequest, status: number, exception: unknown): void {
+    const docId = (req.params as Record<string, string> | undefined)?.id;
+    const stack = exception instanceof Error ? exception.stack : String(exception);
+    if (process.env.NODE_ENV === 'production') {
+      const line = { time: new Date().toISOString(), level: 'error', msg: 'unhandled_error', method: req.method,
+        path: req.originalUrl.split('?')[0], status, docId, requestId: req.id, userId: req.user?.id, stack };
+      process.stdout.write(`${JSON.stringify(line)}
+`);
+      return;
     }
-    res.status(status).json({ error: body });
+    this.logger.error(`${req.method} ${req.originalUrl} doc=${docId ?? '-'} rid=${req.id} -> ${status}`, stack);
   }
 
   private toEnvelope(exception: unknown): { status: number; body: Record<string, unknown> } {

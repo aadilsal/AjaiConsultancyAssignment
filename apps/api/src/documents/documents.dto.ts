@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
@@ -8,6 +8,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
   ValidateIf,
@@ -66,9 +67,32 @@ export class DocDetailDto extends DocSummaryDto {
   @ApiProperty({ example: 1 }) version: number;
 }
 
+export class ListDocumentsQuery {
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 50, description: 'Page size per list' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'limit must be an integer' })
+  @Min(1, { message: 'limit must be between 1 and 100' })
+  @Max(100, { message: 'limit must be between 1 and 100' })
+  limit?: number;
+
+  @ApiPropertyOptional({ description: 'A nextCursor value from a previous page; returns the next page of that list only' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  cursor?: string;
+}
+
+export class NextCursorDto {
+  @ApiProperty({ type: String, nullable: true, example: null }) owned: string | null;
+  @ApiProperty({ type: String, nullable: true, example: null }) shared: string | null;
+}
+
 export class DocListDto {
   @ApiProperty({ type: [DocSummaryDto] }) owned: DocSummaryDto[];
   @ApiProperty({ type: [DocSummaryDto] }) shared: DocSummaryDto[];
+  @ApiProperty({ type: NextCursorDto, description: 'Pass one of these as ?cursor= to fetch more of that list' })
+  nextCursor: NextCursorDto;
 }
 
 export class DocSavedDto {

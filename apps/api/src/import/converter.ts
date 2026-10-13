@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 import mammoth from 'mammoth';
 import { marked } from 'marked';
 import { AppError } from '../common/app-error';
-import { editorSchema, TiptapJSON } from '../editor/extensions';
+import { editorSchema, isSafeHref, isValidDoc, TiptapJSON } from '../editor/extensions';
 
 export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 export type ImportKind = 'txt' | 'md' | 'docx';
@@ -73,7 +73,33 @@ async function toHtml(buffer: Buffer, kind: ImportKind): Promise<string> {
 // Schema-driven parse: unknown tags (script, style, img...) are dropped.
 function htmlToDoc(html: string): TiptapJSON {
   const { document } = new JSDOM(`<!doctype html><html><body>${html}</body></html>`).window;
-  return PMDOMParser.fromSchema(editorSchema).parse(document.body).toJSON() as TiptapJSON;
+  markTaskLists(document);
+  return stripUnsafeLinks(PMDOMParser.fromSchema(editorSchema).parse(document.body).toJSON() as TiptapJSON);
+}
+
+// GFM "- [ ] item" HTML -> the data-type markup Tiptap's TaskList/TaskItem parse.
+function markTaskLists(document: Document): void {
+  for (const ul of Array.from(document.querySelectorAll('ul'))) {
+    const items = Array.from(ul.children).filter((el) => el.tagName === 'LI');
+    const boxes = items.map((li) => li.querySelector(':scope > input[type="checkbox"], :scope > p > input[type="checkbox"]'));
+    if (!items.length || boxes.some((b) => !b)) continue;
+    ul.setAttribute('data-type', 'taskList');
+    items.forEach((li, i) => {
+      li.setAttribute('data-type', 'taskItem');
+      li.setAttribute('data-checked', String(boxes[i]!.hasAttribute('checked')));
+      boxes[i]!.remove();
+    });
+  }
+}
+
+// Drops link marks whose href is not http(s)/mailto (e.g. javascript:).
+function stripUnsafeLinks(node: TiptapJSON): TiptapJSON {
+  const marks = node.marks as { type: string; attrs?: { href?: unknown } }[] | undefined;
+  return {
+    ...node,
+    ...(marks && { marks: marks.filter((m) => m.type !== 'link' || isSafeHref(m.attrs?.href)) }),
+    ...(node.content && { content: node.content.map(stripUnsafeLinks) }),
+  };
 }
 
 // Pure: file bytes -> schema-valid Tiptap JSON (throws UNREADABLE_FILE).
@@ -82,7 +108,7 @@ export async function convertFileToDoc(buffer: Buffer, filename: string): Promis
   let json: TiptapJSON;
   try {
     json = htmlToDoc(await toHtml(buffer, kind));
-    editorSchema.nodeFromJSON(json).check();
+    if (!isValidDoc(json)) throw new Error('invalid');
   } catch {
     throw unreadableFile();
   }

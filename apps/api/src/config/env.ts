@@ -6,6 +6,7 @@ export interface AppEnv {
   PORT: number;
   NODE_ENV: string;
   THROTTLE_LIMIT: number;
+  TRUST_PROXY_HOPS: number;
 }
 
 // Fails fast at boot on missing or weak config.
@@ -19,6 +20,8 @@ export function validateEnv(raw: Record<string, unknown>): AppEnv {
   if (cookieRaw && !['true', 'false'].includes(cookieRaw)) errors.push('COOKIE_SECURE must be "true" or "false"');
   const port = Number(get('PORT') || 4000);
   if (!Number.isInteger(port) || port <= 0) errors.push('PORT must be a positive integer');
+  const hops = Number(get('TRUST_PROXY_HOPS') || 1);
+  if (!Number.isInteger(hops) || hops < 0 || hops > 10) errors.push('TRUST_PROXY_HOPS must be an integer 0-10');
   if (errors.length) throw new Error(`Invalid environment: ${errors.join('; ')}`);
   return {
     DATABASE_URL: get('DATABASE_URL'),
@@ -31,5 +34,6 @@ export function validateEnv(raw: Record<string, unknown>): AppEnv {
     PORT: port,
     NODE_ENV: nodeEnv,
     THROTTLE_LIMIT: Number(get('THROTTLE_LIMIT') || 120),
+    TRUST_PROXY_HOPS: hops,
   };
 }

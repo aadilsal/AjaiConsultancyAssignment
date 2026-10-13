@@ -136,7 +136,7 @@ describe('POST /api/documents/import (e2e)', () => {
 
   it('import .pdf -> 400 UNSUPPORTED_TYPE', async () => {
     const res = await upload(Buffer.from('%PDF-1.4'), 'paper.pdf', 'application/pdf').expect(400);
-    expect(res.body.error).toEqual({ code: 'UNSUPPORTED_TYPE', message: 'Only .txt, .md and .docx files are supported' });
+    expect(res.body.error).toMatchObject({ code: 'UNSUPPORTED_TYPE', message: 'Only .txt, .md and .docx files are supported' });
   });
 
   it('import .md with a disallowed mimetype -> 400 UNSUPPORTED_TYPE', async () => {
@@ -156,12 +156,12 @@ describe('POST /api/documents/import (e2e)', () => {
 
   it('import a file over 5 MB -> 413 FILE_TOO_LARGE', async () => {
     const res = await upload(Buffer.alloc(5 * 1024 * 1024 + 1, 'a'), 'huge.txt', 'text/plain').expect(413);
-    expect(res.body.error).toEqual({ code: 'FILE_TOO_LARGE', message: 'File is larger than 5 MB' });
+    expect(res.body.error).toMatchObject({ code: 'FILE_TOO_LARGE', message: 'File is larger than 5 MB' });
   });
 
   it('import a corrupt .docx -> 422 UNREADABLE_FILE', async () => {
     const res = await upload(Buffer.from('not really a docx'), 'broken.docx', 'application/octet-stream').expect(422);
-    expect(res.body.error).toEqual({
+    expect(res.body.error).toMatchObject({
       code: 'UNREADABLE_FILE',
       message: "We couldn't read this file. Try saving it again as .docx or .md.",
     });

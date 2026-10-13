@@ -32,13 +32,13 @@ describe('Shares (e2e)', () => {
   it('share with an unknown email -> 404 USER_NOT_FOUND', async () => {
     const id = await newDoc();
     const res = await http().post(`/api/documents/${id}/shares`).set('Cookie', ownerC).send({ email: 'nobody@test.local' }).expect(404);
-    expect(res.body.error).toEqual({ code: 'USER_NOT_FOUND', message: 'No user with that email' });
+    expect(res.body.error).toMatchObject({ code: 'USER_NOT_FOUND', message: 'No user with that email' });
   });
 
   it('share with yourself -> 422 SELF_SHARE', async () => {
     const id = await newDoc();
     const res = await http().post(`/api/documents/${id}/shares`).set('Cookie', ownerC).send({ email: owner.email }).expect(422);
-    expect(res.body.error).toEqual({ code: 'SELF_SHARE', message: 'You already own this document' });
+    expect(res.body.error).toMatchObject({ code: 'SELF_SHARE', message: 'You already own this document' });
   });
 
   it('share with an invalid email or role -> 400 VALIDATION_ERROR', async () => {
@@ -73,7 +73,7 @@ describe('Shares (e2e)', () => {
     const id = await newDoc();
     await http().post(`/api/documents/${id}/shares`).set('Cookie', ownerC).send({ email: bob.email }).expect(201);
     const res = await http().post(`/api/documents/${id}/shares`).set('Cookie', ownerC).send({ email: bob.email }).expect(409);
-    expect(res.body.error).toEqual({ code: 'ALREADY_SHARED', message: 'Already shared with Bob Smith' });
+    expect(res.body.error).toMatchObject({ code: 'ALREADY_SHARED', message: 'Already shared with Bob Smith' });
   });
 
   it('owner lists shares -> owner plus each grantee', async () => {

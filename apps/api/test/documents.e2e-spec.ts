@@ -119,7 +119,7 @@ describe('Documents (e2e)', () => {
     it('stranger GET -> 404 NOT_FOUND (no existence leak)', async () => {
       const id = await sharedDoc();
       const res = await http().get(`/api/documents/${id}`).set('Cookie', strangerC).expect(404);
-      expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Document not found.' } });
+      expect(res.body).toMatchObject({ error: { code: 'NOT_FOUND', message: 'Document not found.' } });
     });
 
     it('nonexistent id -> 404 NOT_FOUND', async () => {
@@ -241,7 +241,7 @@ describe('Documents (e2e)', () => {
         .set('Cookie', ownerC)
         .send({ content: doc('x'.repeat(1024 * 1024 + 10)), baseVersion: 1 })
         .expect(413);
-      expect(res.body.error).toEqual({ code: 'CONTENT_TOO_LARGE', message: 'Document is too large to save' });
+      expect(res.body.error).toMatchObject({ code: 'CONTENT_TOO_LARGE', message: 'Document is too large to save' });
     });
 
     it('request body over the 2 MB JSON limit -> 413 CONTENT_TOO_LARGE', async () => {
