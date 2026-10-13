@@ -137,7 +137,7 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   await caption(page, F(2, 'Import'), 'Supported: .txt, .md, .docx up to 5 MB — limits are stated in the dialog', 2200);
   await page.getByLabel('Choose file').setInputFiles(SAMPLE_DOCX);
   await pause(page, 800);
-  await page.getByRole('dialog').getByRole('button', { name: 'Import' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Import', exact: true }).click();
   const openBtn = page.getByRole('alertdialog').getByRole('button', { name: 'Open document' });
   if (await openBtn.isVisible({ timeout: 8000 }).catch(() => false)) await openBtn.click();
   await page.waitForURL(/\/docs\//);
@@ -149,10 +149,10 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   // Flow 3 — share.
   await page.goto(docUrl);
   await caption(page, F(3, 'Share'), 'Only the owner sees the Share button. Alice shares the doc with Bob by email', 1500);
-  await page.getByRole('button', { name: 'Share' }).click();
+  await page.getByRole('button', { name: 'Share', exact: true }).click();
   const share = page.getByRole('dialog', { name: 'Share document' });
   await share.getByRole('textbox', { name: 'Email' }).pressSequentially('bob@ajaia.test', { delay: 35 });
-  await share.getByRole('button', { name: 'Share' }).click();
+  await share.getByRole('button', { name: 'Share', exact: true }).click();
   await dismissModal(page);
   await expect(share.getByText('bob@ajaia.test')).toBeVisible();
   await caption(page, F(3, 'Share'), 'Bob now appears in the access list as an Editor', 2500);
@@ -193,7 +193,7 @@ test('Ajaia Docs walkthrough', async ({ page }) => {
   await logout(page);
   await loginAs(page, 'Alice');
   await page.goto(docUrl);
-  await page.getByRole('button', { name: 'Share' }).click();
+  await page.getByRole('button', { name: 'Share', exact: true }).click();
   await page.getByRole('button', { name: /Remove Bob/ }).click();
   await dismissModal(page);
   await pause(page, 1500);

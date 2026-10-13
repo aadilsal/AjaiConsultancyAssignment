@@ -10,7 +10,7 @@
 | **Live app** | **https://docs.51-170-90-86.sslip.io** |
 | API docs (Swagger UI) | https://docs.51-170-90-86.sslip.io/api/docs |
 | Source code | https://github.com/aadilsal/AjaiConsultancyAssignment |
-| Walkthrough video | `<LOOM_LINK>` (also in `VIDEO_URL.txt`) |
+| Walkthrough video | `ajaia-docs-walkthrough.mp4` in the Google Drive folder above (also listed in `VIDEO_URL.txt`) |
 
 ## Accounts for reviewing sharing
 
@@ -74,7 +74,7 @@ All P0 requirements, verified on the live URL:
 - **Server-side session revocation** — logout clears the cookie; tokens otherwise expire after 7 days.
 - **Live dashboard updates** — newly shared or revoked docs appear on refresh, not instantly.
 - **Import fidelity** — images, tables, fonts and colours are dropped by design; PDF is not supported.
-- `<E2E_STATUS_NOTE>`
+- **Browser E2E suite** — Playwright specs exist for every flow (auth, write, import, share, deny, dashboard, autosave, register, toolbar, public pages); the walkthrough video is a scripted Playwright run of all six flows. A full cross-browser run of the whole suite against the live URL was not completed before the deadline.
 
 ## What I'd build next (2–4 hours)
 
@@ -109,8 +109,8 @@ Built with parallel AI agents coordinated by one lead session (see [AGENTS.md](A
 | Web app | 1:00 | ~2:00 | Agent; scope grew (theme, modals, toolbar, landing) |
 | Infra: Docker, VM, CI, HTTPS | 0:30 | 0:40 | Shared VM: isolated project, HTTPS via existing proxy |
 | E2E tests | 0:30 | parallel | Agent |
-| Deploy, QA on live URL, video | 0:40 | `<FILL>` | |
-| **Total wall-clock** | **~4:00** | `<FILL>` | Several blocks ran concurrently |
+| Deploy, QA on live URL, video | 0:40 | ~0:45 | Local Docker hiccup + image upload to the VM |
+| **Total wall-clock** | **~4:00** | **~2:50** | 21:24 → 00:15, several blocks ran concurrently |
 
 ## Files in this submission
 
@@ -133,3 +133,16 @@ e2e/                    Playwright end-to-end tests (+ demo/ walkthrough recorde
 samples/                .docx / .md / .txt files for testing import
 docker-compose*.yml, scripts/deploy.sh, .github/workflows/ci.yml
 ```
+
+## Performance (measured on the live HTTPS URL)
+
+Target: pages and API responses under 2 s. Measured with `curl` from a home connection (includes network round trip):
+
+| Endpoint | Typical | Worst |
+|---|---|---|
+| Landing `/welcome` | 0.90 s | 1.23 s (cold) |
+| Dashboard `/`, editor `/docs/:id` | 0.51 s | 0.52 s |
+| `GET /api/documents`, `/api/auth/me`, `/api/health` | 0.40–0.44 s | 0.44 s |
+| `GET /api/documents/:id`, `/shares` | 0.39–0.49 s | 0.54 s |
+
+Next.js standalone server, gzip at the proxy, compression in the API, indexed queries (`documents(owner_id, updated_at)`, `document_shares(user_id)`).
