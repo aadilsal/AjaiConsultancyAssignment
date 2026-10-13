@@ -1,0 +1,9 @@
+Ajaia Docs — walkthrough video (under 4 minutes, on-screen captions)
+
+Video:          <LOOM_OR_YOUTUBE_LINK>
+Google Drive:   <DRIVE_FOLDER_LINK>
+
+Live app:       https://docs.51-170-90-86.sslip.io
+Source code:    https://github.com/aadilsal/AjaiConsultancyAssignment
+
+Demo accounts (password demo1234): alice@ajaia.test (owner) · bob@ajaia.test (collaborator) · carol@ajaia.test (outsider)
